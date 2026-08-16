@@ -1,6 +1,6 @@
 package athena.coder.ai.workflow.node.debug;
 
-import athena.coder.ai.assistant.agent.debug.FixVerifyAgent;
+import athena.coder.ai.assistant.agent.TestExecutorAgent;
 import athena.coder.ai.assistant.agent.result.tester.TesterResult;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractTesterNode;
@@ -45,8 +45,8 @@ public class FixVerifyNode extends AbstractTesterNode {
                 "acceptanceCriteria长度", acceptanceCriteria.length());
         notifyModelCalling(state);
 
-        FixVerifyAgent assistant = newChatAssistant(ctx.modelType(), FixVerifyAgent.class);
-        AgentCall<TesterResult> call = request -> assistant.verify(
+        TestExecutorAgent assistant = newChatAssistant(ctx.modelType(), TestExecutorAgent.class);
+        AgentCall<TesterResult> call = request -> assistant.test(
                 ctx.taskId(),
                 request,
                 ctx.projectPath(),

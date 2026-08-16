@@ -24,6 +24,11 @@ public class WorkflowState extends AgentState {
     public final static String ROUTE_CONTEXT = "routeContext";
 
     /**
+     * 原始需求/计划快照（由写角色节点落库，供审查/报告节点对齐需求）
+     */
+    public final static String ORIGINAL_REQUIREMENT = "originalRequirement";
+
+    /**
      * 规划蓝图
      */
     public final static String PLAN = "PLAN";

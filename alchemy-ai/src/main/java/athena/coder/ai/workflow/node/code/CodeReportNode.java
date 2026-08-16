@@ -1,6 +1,6 @@
 package athena.coder.ai.workflow.node.code;
 
-import athena.coder.ai.assistant.agent.code.CodeReportAgent;
+import athena.coder.ai.assistant.agent.ReportAgent;
 import athena.coder.ai.assistant.agent.result.summarizer.SummarizerResult;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractAgentNode;
@@ -47,14 +47,19 @@ public class CodeReportNode extends AbstractAgentNode {
                 "reviewResult长度", reviewResult != null ? reviewResult.length() : 0);
         notifyModelCalling(state);
 
-        CodeReportAgent assistant = newChatAssistant(ctx.modelType(), CodeReportAgent.class);
+        ReportAgent assistant = newChatAssistant(ctx.modelType(), ReportAgent.class);
         AgentCall<SummarizerResult> call = request -> assistant.report(
                 ctx.taskId(),
                 request,
                 ctx.projectPath(),
                 LocalDate.now().format(DATE_FMT),
+                sessionId(),
+                "feat",
+                "feature",
+                "编码工作流：功能实现交付报告",
                 originalRequirement,
                 changeSummary,
+                "",
                 testResult,
                 reviewResult
         );

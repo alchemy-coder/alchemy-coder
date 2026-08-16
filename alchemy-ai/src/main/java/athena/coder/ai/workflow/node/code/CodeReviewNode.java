@@ -63,6 +63,7 @@ public class CodeReviewNode extends AbstractAgentNode {
                 ctx.projectPath(),
                 ctx.projectType(),
                 LocalDate.now().format(DATE_FMT),
+                sessionId(),
                 originalRequirement,
                 changeSummary,
                 testResult,

@@ -1,6 +1,6 @@
 package athena.coder.ai.workflow.node.code;
 
-import athena.coder.ai.assistant.agent.code.CodeTestAgent;
+import athena.coder.ai.assistant.agent.TestExecutorAgent;
 import athena.coder.ai.assistant.agent.result.tester.TesterResult;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractTesterNode;
@@ -44,7 +44,7 @@ public class CodeTestNode extends AbstractTesterNode {
                 "acceptanceCriteria长度", acceptanceCriteria.length());
         notifyModelCalling(state);
 
-        CodeTestAgent assistant = newChatAssistant(ctx.modelType(), CodeTestAgent.class);
+        TestExecutorAgent assistant = newChatAssistant(ctx.modelType(), TestExecutorAgent.class);
         AgentCall<TesterResult> call = request -> assistant.test(
                 ctx.taskId(),
                 request,

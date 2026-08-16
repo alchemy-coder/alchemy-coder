@@ -1,7 +1,7 @@
 package athena.coder.ai.workflow.node.word;
 
 import athena.coder.ai.assistant.agent.result.coder.CoderResult;
-import athena.coder.ai.assistant.agent.word.DocWriteAgent;
+import athena.coder.ai.assistant.agent.GenericWriterAgent;
 import athena.coder.ai.tool.util.GitHelper;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractAgentNode;
@@ -53,7 +53,7 @@ public class DocWriteNode extends AbstractAgentNode {
         }
 
         final String finalTaskDescription = taskDescription;
-        DocWriteAgent assistant = newChatAssistant(ctx.modelType(), DocWriteAgent.class);
+        GenericWriterAgent assistant = newChatAssistant(ctx.modelType(), GenericWriterAgent.class);
         GitHelper.IsolationResult<CoderResult> isolation = GitHelper.isolateAndCommit(
                 ctx.projectPath(), "AI-DOCER: task-" + ctx.taskId(),
                 () -> invokeWithRetry(assistant, ctx, finalTaskDescription));
@@ -98,16 +98,18 @@ public class DocWriteNode extends AbstractAgentNode {
      * 隔离期内调用 Agent：首调失败 → 清理 AI 工作区 → 带纠错指令重试一次；
      * 重试仍失败时上抛，由 {@link GitHelper#isolateAndCommit} 统一完成清理与用户改动恢复
      */
-    private CoderResult invokeWithRetry(DocWriteAgent assistant, NodeContext ctx, String taskDescription) throws Exception {
+    private CoderResult invokeWithRetry(GenericWriterAgent assistant, NodeContext ctx, String taskDescription) throws Exception {
         try {
-            return assistant.write(taskDescription, ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT));
+            return assistant.write(taskDescription, ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
+                    "文档工作流：编写文档/注释", "禁止修改逻辑代码，只能修改文档和注释类文件");
         } catch (Exception e) {
             ErrorLogger.log("DocWriteNode", e, ctx.taskId(), "DocWriteAgent", null);
             GitHelper.cleanAiWorkspace(ctx.projectPath());
             try {
                 return assistant.write(
                         "你上次的输出不正确，请重新执行文档任务并按JSON格式输出。任务描述: " + taskDescription,
-                        ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT));
+                        ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
+                        "文档工作流：编写文档/注释", "禁止修改逻辑代码，只能修改文档和注释类文件");
             } catch (Exception retryEx) {
                 throw new RocAgentException("DocWriteAgent 调用失败: " + retryEx.getMessage(), retryEx);
             }

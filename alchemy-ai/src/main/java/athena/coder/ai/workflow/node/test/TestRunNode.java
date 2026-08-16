@@ -1,7 +1,7 @@
 package athena.coder.ai.workflow.node.test;
 
 import athena.coder.ai.assistant.agent.result.tester.TesterResult;
-import athena.coder.ai.assistant.agent.test.TestRunAgent;
+import athena.coder.ai.assistant.agent.TestExecutorAgent;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractTesterNode;
 
@@ -44,8 +44,8 @@ public class TestRunNode extends AbstractTesterNode {
                 "acceptanceCriteria长度", acceptanceCriteria.length());
         notifyModelCalling(state);
 
-        TestRunAgent assistant = newChatAssistant(ctx.modelType(), TestRunAgent.class);
-        AgentCall<TesterResult> call = request -> assistant.run(
+        TestExecutorAgent assistant = newChatAssistant(ctx.modelType(), TestExecutorAgent.class);
+        AgentCall<TesterResult> call = request -> assistant.test(
                 ctx.taskId(),
                 request,
                 ctx.projectPath(),

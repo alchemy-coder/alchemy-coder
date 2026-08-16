@@ -1,6 +1,6 @@
 package athena.coder.ai.workflow.node.debug;
 
-import athena.coder.ai.assistant.agent.debug.FixReportAgent;
+import athena.coder.ai.assistant.agent.ReportAgent;
 import athena.coder.ai.assistant.agent.result.summarizer.SummarizerResult;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractAgentNode;
@@ -48,16 +48,21 @@ public class FixReportNode extends AbstractAgentNode {
                 "testResult长度", testResult != null ? testResult.length() : 0);
         notifyModelCalling(state);
 
-        FixReportAgent assistant = newChatAssistant(ctx.modelType(), FixReportAgent.class);
+        ReportAgent assistant = newChatAssistant(ctx.modelType(), ReportAgent.class);
         AgentCall<SummarizerResult> call = request -> assistant.report(
                 ctx.taskId(),
                 request,
                 ctx.projectPath(),
                 LocalDate.now().format(DATE_FMT),
+                sessionId(),
+                "fix",
+                "fix",
+                "缺陷修复工作流：修复交付报告",
                 originalRequirement,
                 changeSummary,
                 fixStrategy,
-                testResult
+                testResult,
+                ""
         );
 
         SummarizerResult summarizeResult = callAgentWithRetry(

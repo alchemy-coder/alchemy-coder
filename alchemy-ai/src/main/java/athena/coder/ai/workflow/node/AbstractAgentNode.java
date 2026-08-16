@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.node;
 
+import athena.coder.ai.assistant.agent.result.MarkdownUtils;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.base.ToolInvocationLogger;
 import athena.coder.ai.workflow.entity.WorkflowState;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -379,6 +381,13 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
      */
     protected String stepLabel() {
         return "";
+    }
+
+    /**
+     * 生成会话 ID，供下游 Agent 在输出中关联（UUID 前8位）
+     */
+    protected String sessionId() {
+        return UUID.randomUUID().toString().substring(0, 8);
     }
 
     /**

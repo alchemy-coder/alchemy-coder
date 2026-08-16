@@ -1,6 +1,6 @@
 package athena.coder.ai.workflow.node.code;
 
-import athena.coder.ai.assistant.agent.code.CodeWriterAgent;
+import athena.coder.ai.assistant.agent.GenericWriterAgent;
 import athena.coder.ai.assistant.agent.result.coder.CoderResult;
 import athena.coder.ai.tool.util.GitHelper;
 import athena.coder.ai.workflow.entity.WorkflowState;
@@ -49,7 +49,7 @@ public class CodeWriterNode extends AbstractAgentNode {
             throw new RocAgentException("CodeWriterNode 无法获取任务描述（plan 和 fixStrategy 均为空）");
         }
 
-        CodeWriterAgent assistant = newChatAssistant(ctx.modelType(), CodeWriterAgent.class);
+        GenericWriterAgent assistant = newChatAssistant(ctx.modelType(), GenericWriterAgent.class);
         GitHelper.IsolationResult<CoderResult> isolation = GitHelper.isolateAndCommit(
                 ctx.projectPath(), "AI-CODER: task-" + ctx.taskId(),
                 () -> invokeWithRetry(assistant, ctx, taskDescription));
@@ -94,16 +94,18 @@ public class CodeWriterNode extends AbstractAgentNode {
      * 隔离期内调用 Agent：首调失败 → 清理 AI 工作区 → 带纠错指令重试一次；
      * 重试仍失败时上抛，由 {@link GitHelper#isolateAndCommit} 统一完成清理与用户改动恢复
      */
-    private CoderResult invokeWithRetry(CodeWriterAgent assistant, NodeContext ctx, String taskDescription) throws Exception {
+    private CoderResult invokeWithRetry(GenericWriterAgent assistant, NodeContext ctx, String taskDescription) throws Exception {
         try {
-            return assistant.code(taskDescription, ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT));
+            return assistant.write(taskDescription, ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
+                    "编码工作流：编写业务代码", "不要修改测试文件，专注业务代码编写");
         } catch (Exception e) {
             ErrorLogger.log("CodeWriterNode", e, ctx.taskId(), "CodeWriterAgent", null);
             GitHelper.cleanAiWorkspace(ctx.projectPath());
             try {
-                return assistant.code(
+                return assistant.write(
                         "你上次的输出不正确，请重新执行任务并按JSON格式输出。任务描述: " + taskDescription,
-                        ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT));
+                        ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
+                        "编码工作流：编写业务代码", "不要修改测试文件，专注业务代码编写");
             } catch (Exception retryEx) {
                 throw new RocAgentException("CodeWriterAgent 调用失败: " + retryEx.getMessage(), retryEx);
             }

@@ -1,6 +1,6 @@
 package athena.coder.ai.workflow.node.code;
 
-import athena.coder.ai.assistant.agent.code.CodeFixAnalystAgent;
+import athena.coder.ai.assistant.agent.FixAnalystAgent;
 import athena.coder.ai.assistant.agent.result.debugger.DebuggerResult;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractAgentNode;
@@ -55,13 +55,14 @@ public class CodeFixAnalystNode extends AbstractAgentNode {
                 "hasPreviousFixes", previousFixes != null && !previousFixes.isBlank());
         notifyModelCalling(state);
 
-        CodeFixAnalystAgent assistant = newChatAssistant(ctx.modelType(), CodeFixAnalystAgent.class);
+        FixAnalystAgent assistant = newChatAssistant(ctx.modelType(), FixAnalystAgent.class);
         AgentCall<DebuggerResult> call = request -> assistant.analyze(
                 ctx.taskId(),
                 request,
                 ctx.projectPath(),
                 ctx.projectType(),
                 LocalDate.now().format(DATE_FMT),
+                sessionId(),
                 testResult,
                 changedFiles,
                 changedDiffRef,

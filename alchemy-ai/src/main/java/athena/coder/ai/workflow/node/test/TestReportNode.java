@@ -1,7 +1,7 @@
 package athena.coder.ai.workflow.node.test;
 
 import athena.coder.ai.assistant.agent.result.summarizer.SummarizerResult;
-import athena.coder.ai.assistant.agent.test.TestReportAgent;
+import athena.coder.ai.assistant.agent.ReportAgent;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.AbstractAgentNode;
 import athena.coder.ai.spi.ErrorLogger;
@@ -47,14 +47,19 @@ public class TestReportNode extends AbstractAgentNode {
                 "reviewResult长度", reviewResult != null ? reviewResult.length() : 0);
         notifyModelCalling(state);
 
-        TestReportAgent assistant = newChatAssistant(ctx.modelType(), TestReportAgent.class);
+        ReportAgent assistant = newChatAssistant(ctx.modelType(), ReportAgent.class);
         AgentCall<SummarizerResult> call = request -> assistant.report(
                 ctx.taskId(),
                 request,
                 ctx.projectPath(),
                 LocalDate.now().format(DATE_FMT),
+                sessionId(),
+                "test",
+                "test",
+                "测试补全工作流：补测交付报告",
                 originalRequirement,
                 changeSummary,
+                "",
                 testResult,
                 reviewResult
         );
