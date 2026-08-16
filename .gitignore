@@ -1,4 +1,45 @@
+# ====== Maven ======
 target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# ====== Java ======
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ====== IntelliJ IDEA ======
 .idea/
 *.iml
+*.iws
+*.ipr
+out/
+
+# ====== OS ======
 .DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ====== Backup ======
+.backup/
+*.bak
+*.orig
+*.tmp
+*~
+
+# ====== Logs ======
+*.log
+logs/
+
+# ====== Environment ======
+.env
+.env.local
+.env.*.local
