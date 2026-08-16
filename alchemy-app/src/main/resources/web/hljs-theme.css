@@ -1,0 +1,12 @@
+/* highlight.js 亮底主题 — 仅语法着色，布局由 base.css 统一管理 */
+
+.hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-section,.hljs-link{color:#7c3aed}
+.hljs-string,.hljs-title.class_,.hljs-title.class_ .hljs-keyword{color:#059669}
+.hljs-attr,.hljs-variable,.hljs-template-variable,.hljs-type,.hljs-selector-class,.hljs-selector-attr,.hljs-selector-pseudo{color:#d97706}
+.hljs-number,.hljs-symbol,.hljs-bullet,.hljs-addition{color:#d97706}
+.hljs-built_in,.hljs-title.function_{color:#2563eb}
+.hljs-comment,.hljs-quote,.hljs-deletion,.hljs-meta{color:#94a3b8;font-style:italic}
+.hljs-regexp,.hljs-emphasis{color:#0891b2;font-style:italic}
+.hljs-strong{color:#dc2626;font-weight:700}
+.hljs-name,.hljs-tag{color:#dc2626}.hljs-attribute{color:#d97706}
+.hljs-subst{color:#475569}.hljs-formula,.hljs-params{color:#64748b}

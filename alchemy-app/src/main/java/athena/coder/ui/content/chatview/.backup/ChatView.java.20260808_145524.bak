@@ -1,0 +1,584 @@
+package athena.coder.ui.content.chatview;
+
+import athena.coder.entity.chat.ChatDetail;
+import athena.coder.entity.chat.ChatEnum;
+import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
+import javafx.concurrent.Worker;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.web.WebView;
+import org.commonmark.Extension;
+import org.commonmark.ext.autolink.AutolinkExtension;
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static athena.coder.app.AppState.chatList;
+import static athena.coder.entity.BasicConstants.InPutUi.TEXTAREA_HEIGHT;
+import static athena.coder.entity.BasicConstants.InPutUi.TEXTAREA_WIDTH;
+import static athena.coder.ui.content.basicInputview.InputView.newInputViewWithBorder;
+
+public class ChatView {
+
+    private static final Logger LOG = Logger.getLogger(ChatView.class.getName());
+    private static final Parser PARSER;
+    private static final HtmlRenderer RENDERER;
+    private static final double CHAT_VIEW_WIDTH = TEXTAREA_WIDTH;
+    private static final Map<String, WebView> ROBOT_WEBVIEW_MAP = new ConcurrentHashMap<>();
+    /**
+     * 消息详情列表，用于虚拟化时重建 WebView
+     */
+    private static final List<ChatDetail> MESSAGE_DETAILS = new CopyOnWriteArrayList<>();
+    /**
+     * 最大同时活跃 WebView 数量
+     */
+    private static final int MAX_ACTIVE_WEBVIEWS = 20;
+    /**
+     * 虚拟化视口缓冲区（像素）
+     */
+    private static final double VIRTUALIZE_BUFFER_PX = 1500;
+    /**
+     * 占位符默认高度
+     */
+    private static final double DEFAULT_PLACEHOLDER_HEIGHT = 100;
+    /**
+     * CSS 样式常量，仅在类加载时构建一次
+     */
+    private static final String CSS = buildCss();
+    /**
+     * HTML 页面头部模板（CSS 已内联）
+     */
+    private static final String HTML_HEAD = "<html><head><meta charset=\"UTF-8\"><style>" + CSS + "</style></head><body><div id='content'>";
+    private static final String HTML_TAIL = "</div></body></html>";
+    /**
+     * 自动滚动阈值：距底部多少像素内视为"在底部"
+     */
+    private static final double AUTO_SCROLL_THRESHOLD = 50;
+    /**
+     * 代码块复制按钮注入脚本
+     */
+    private static final String COPY_BTN_JS =
+            "(function(){" +
+                    "if(window.__cbInit)return;window.__cbInit=true;" +
+                    "var ps=document.querySelectorAll('pre');" +
+                    "for(var i=0;i<ps.length;i++){" +
+                    "var p=ps[i];if(p.parentElement.classList.contains('code-wrap'))continue;" +
+                    "var w=document.createElement('div');w.className='code-wrap';" +
+                    "p.parentNode.insertBefore(w,p);w.appendChild(p);" +
+                    "var b=document.createElement('button');b.className='cp-btn';b.textContent='Copy';" +
+                    "b.onclick=function(){" +
+                    "var c=this.parentElement.querySelector('code').textContent;" +
+                    "var t=this;" +
+                    "if(navigator.clipboard){navigator.clipboard.writeText(c).then(function(){" +
+                    "t.textContent='Copied';setTimeout(function(){t.textContent='Copy'},1500);});}" +
+                    "else{var ta=document.createElement('textarea');ta.value=c;" +
+                    "ta.style.position='fixed';ta.style.opacity='0';" +
+                    "document.body.appendChild(ta);ta.select();" +
+                    "try{document.execCommand('copy');t.textContent='Copied';" +
+                    "setTimeout(function(){t.textContent='Copy'},1500);}catch(e){}" +
+                    "document.body.removeChild(ta);}" +
+                    "};w.appendChild(b);}" +
+                    "})();";
+    /**
+     * 当前活跃的聊天 ScrollPane 引用，用于流式更新时自动滚动
+     */
+    private static volatile ScrollPane activeScrollPane;
+
+    static {
+        List<Extension> extensions = Arrays.asList(
+                TablesExtension.create(),
+                StrikethroughExtension.create(),
+                AutolinkExtension.create()
+        );
+        PARSER = Parser.builder().extensions(extensions).build();
+        RENDERER = HtmlRenderer.builder().extensions(extensions).build();
+    }
+
+    /**
+     * 构建完整的 CSS 样式表
+     */
+    private static String buildCss() {
+        return String.join("\n",
+                /* ── 基础重置 ── */
+                "* { margin: 0; padding: 0; box-sizing: border-box; }",
+                "html { overflow: hidden; height: 100%; }",
+                "body { margin: 0; padding: 18px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14.5px; line-height: 1.65; color: #334155; background-color: #fafbfc; overflow: hidden; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }",
+                "::-webkit-scrollbar { display: none; }",
+                "::selection { background: #bfdbfe; color: #1e293b; }",
+                "#content { word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; }",
+
+                /* ── 标题 ── */
+                "h1, h2, h3, h4, h5, h6 { margin-top: 1.4em; margin-bottom: 0.5em; font-weight: 600; line-height: 1.35; color: #1e293b; }",
+                "h1 { font-size: 1.65em; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }",
+                "h2 { font-size: 1.35em; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }",
+                "h3 { font-size: 1.15em; }",
+                "h4 { font-size: 1.05em; color: #475569; }",
+
+                /* ── 段落与行内文本 ── */
+                "p { margin-bottom: 12px; color: #334155; line-height: 1.7; }",
+                "a { color: #2563eb; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s; } a:hover { border-bottom-color: #2563eb; }",
+                "strong, b { font-weight: 600; color: #1e293b; }",
+                "em, i { color: #475569; }",
+                "del, s { color: #94a3b8; }",
+
+                /* ── 列表 ── */
+                "ul, ol { margin-bottom: 12px; padding-left: 1.8em; }",
+                "li { margin-bottom: 4px; line-height: 1.65; }",
+                "li > p { margin-bottom: 4px; }",
+                "ul { list-style-type: disc; } ul ul { list-style-type: circle; } ul ul ul { list-style-type: square; }",
+                "ol { list-style-type: decimal; }",
+
+                /* ── 引用 ── */
+                "blockquote { margin: 14px 0; padding: 10px 16px; border-left: 3px solid #94a3b8; background: #f8fafc; color: #475569; border-radius: 0 6px 6px 0; }",
+                "blockquote p { margin-bottom: 6px; color: #475569; font-size: 14px; }",
+                "blockquote p:last-child { margin-bottom: 0; }",
+
+                /* ── 行内代码 ── */
+                "code { font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace; font-size: 0.88em; padding: 2px 6px; background: #f1f5f9; border-radius: 4px; color: #be185d; }",
+
+                /* ── 代码块 ── */
+                ".code-wrap { position: relative; margin: 14px 0; }",
+                "pre { margin: 0; padding: 16px 18px; overflow-x: auto; background: #0f172a; border-radius: 8px; line-height: 1.55; }",
+                "pre code { display: block; padding: 0; background: transparent; border-radius: 0; color: #cbd5e1; font-size: 13px; white-space: pre; word-wrap: normal; border: none; }",
+                ".cp-btn { position: absolute; top: 8px; right: 8px; padding: 3px 10px; font-size: 12px; font-family: -apple-system, sans-serif; color: #64748b; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.15s, color 0.15s; }",
+                ".code-wrap:hover .cp-btn { opacity: 1; }",
+                ".cp-btn:hover { background: rgba(255,255,255,0.12); color: #e2e8f0; }",
+
+                /* ── 图片 ── */
+                "img { max-width: 100%; height: auto; border-radius: 6px; margin: 12px 0; }",
+
+                /* ── 表格 ── */
+                "table { width: 100%; margin: 14px 0; border-collapse: collapse; font-size: 14px; }",
+                "th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }",
+                "th { font-weight: 600; color: #1e293b; border-bottom: 2px solid #cbd5e1; }",
+                "tr:hover td { background: #f8fafc; }",
+
+                /* ── 分隔线 ── */
+                "hr { border: none; height: 1px; background: #e2e8f0; margin: 20px 0; }",
+
+                /* ── 首尾间距优化 ── */
+                "#content > :first-child { margin-top: 0; }",
+                "#content > :last-child { margin-bottom: 0; }"
+        );
+    }
+
+    public static StackPane newChatViewWrapper() {
+
+        StackPane rootContent = new StackPane();
+
+        StackPane chatList = new StackPane();
+        chatList.setAlignment(Pos.TOP_CENTER);
+        chatList.getChildren().add(newChatView());
+        rootContent.getChildren().add(chatList);
+
+
+        StackPane inputView = new StackPane();
+        inputView.setAlignment(Pos.BOTTOM_CENTER);
+        inputView.setPickOnBounds(false);
+        StackPane input = newInputViewWithBorder();
+        input.setMaxWidth(TEXTAREA_WIDTH);
+        input.setMaxHeight(TEXTAREA_HEIGHT);
+        inputView.getChildren().add(input);
+
+        rootContent.getChildren().add(inputView);
+
+        return rootContent;
+    }
+
+    public static ScrollPane newChatView() {
+        ScrollPane scrollPane = new ScrollPane();
+        activeScrollPane = scrollPane;
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        VBox vBox = new VBox();
+        vBox.setSpacing(10);
+        vBox.setMouseTransparent(true);
+        vBox.setPadding(new Insets(0, 0, TEXTAREA_HEIGHT, 0));
+        vBox.setMaxWidth(CHAT_VIEW_WIDTH);
+        vBox.setBackground(Background.fill(Color.TRANSPARENT));
+        // 监听 vBox 子节点变化，有新增时滚动到底部，同时为新增的 WebView 添加高度变化监听
+        vBox.getChildren().addListener((ListChangeListener<javafx.scene.Node>) change -> {
+            while (change.next()) {
+                if (change.wasAdded()) {
+                    Platform.runLater(() -> autoScrollToBottom(scrollPane));
+                    for (javafx.scene.Node node : change.getAddedSubList()) {
+                        if (node instanceof WebView wv) {
+                            wv.prefHeightProperty().addListener((obs, oldVal, newVal) -> {
+                                if (newVal.doubleValue() > oldVal.doubleValue()) {
+                                    Platform.runLater(() -> autoScrollToBottom(scrollPane));
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        chatList.addListener((ListChangeListener<ChatDetail>) changelist -> {
+            while (changelist.next()) {
+                if (changelist.wasRemoved() && changelist.getRemovedSize() > 0 && chatList.isEmpty()) {
+                    vBox.getChildren().clear();
+                    ROBOT_WEBVIEW_MAP.clear();
+                    MESSAGE_DETAILS.clear();
+                    scrollPane.setVvalue(1.0);
+                }
+                if (changelist.wasAdded()) {
+                    List<? extends ChatDetail> addedSubList = changelist.getAddedSubList();
+                    if (addedSubList.isEmpty()) {
+                        return;
+                    }
+                    for (ChatDetail detail : addedSubList) {
+                        MESSAGE_DETAILS.add(detail);
+                        String type = detail.getType();
+                        if (type.equals(ChatEnum.USER.name())) {
+                            HBox bubbleBox = getHBox(detail);
+                            vBox.getChildren().add(bubbleBox);
+                        } else {
+                            WebView webView = newRobotWebView(detail, scrollPane);
+                            ROBOT_WEBVIEW_MAP.put(detail.getUuid(), webView);
+                            vBox.getChildren().add(webView);
+                        }
+                    }
+                }
+            }
+        });
+        // 滚动结束后触发虚拟化检查（惰性加载/卸载 WebView）
+        scrollPane.setOnScrollFinished(e -> Platform.runLater(() -> virtualize(scrollPane, vBox)));
+        // 注意：禁用首次自动虚拟化，避免刚加载的 WebView 被立即卸载导致内容空白
+        // 用户滚动时会触发虚拟化，此时 WebView 已完全渲染，可以安全卸载不可见的
+        StackPane stackPane = new StackPane();
+        stackPane.getChildren().add(vBox);
+        stackPane.setAlignment(Pos.TOP_CENTER);
+        scrollPane.setContent(stackPane);
+        return scrollPane;
+    }
+
+    public static WebView newRobotWebView(ChatDetail detail, ScrollPane scrollPane) {
+        Node document = PARSER.parse(detail.getContent());
+
+        // 5. 将 AST 渲染为 HTML 字符串
+        String html = RENDERER.render(document);
+
+        WebView webView = new WebView();
+        webView.setPrefWidth(CHAT_VIEW_WIDTH);
+        webView.setMaxWidth(CHAT_VIEW_WIDTH);
+        webView.setMinWidth(CHAT_VIEW_WIDTH);
+        webView.setPrefHeight(0);
+        webView.setMinHeight(0);
+        webView.setMaxHeight(Double.MAX_VALUE);
+        webView.getEngine().setJavaScriptEnabled(true);
+        String fullHtml = buildFullHtml(html);
+        loadHtmlToWebView(webView, fullHtml);
+        webView.getEngine().getLoadWorker().stateProperty().addListener((obs, o, n) -> {
+            if (n == Worker.State.SUCCEEDED) {
+                Platform.runLater(() -> Platform.runLater(() -> {
+                    try {
+                        Object result = webView.getEngine()
+                                .executeScript("var el = document.getElementById('content'); el ? el.offsetHeight : 0");
+                        if (result instanceof Number) {
+                            double h = ((Number) result).doubleValue() + 16;
+                            if (h > 16) {
+                                webView.setPrefHeight(h);
+                                webView.setMinHeight(h);
+                                webView.setMaxHeight(h);
+                            }
+                        }
+                        webView.getEngine().executeScript(COPY_BTN_JS);
+                    } catch (Exception e) {
+                        LOG.log(Level.SEVERE, "Failed to adjust WebView height: " + e.getMessage(), e);
+                    }
+                    autoScrollToBottom(scrollPane);
+                }));
+            }
+        });
+        return webView;
+    }
+
+    /**
+     * 判断用户当前是否在滚动条底部附近
+     */
+    private static boolean isNearBottom(ScrollPane scrollPane) {
+        double vvalue = scrollPane.getVvalue();
+        if (vvalue >= 0.95) return true;
+        double contentHeight = scrollPane.getContent().getBoundsInLocal().getHeight();
+        double viewportHeight = scrollPane.getViewportBounds().getHeight();
+        if (contentHeight <= viewportHeight) return true;
+        double scrollY = vvalue * (contentHeight - viewportHeight);
+        return (contentHeight - scrollY - viewportHeight) < AUTO_SCROLL_THRESHOLD;
+    }
+
+    /**
+     * 仅在用户已在底部附近时自动滚动到底部
+     */
+    private static void autoScrollToBottom(ScrollPane scrollPane) {
+        if (isNearBottom(scrollPane)) {
+            scrollPane.setVvalue(1.0);
+        }
+    }
+
+    public static void updateStreamingContent(ChatDetail detail) {
+        WebView webView = ROBOT_WEBVIEW_MAP.get(detail.getUuid());
+        if (webView == null) {
+            // 消息可能被虚拟化，尝试同步物化最后一个节点
+            webView = materializeLatestMessage();
+            if (webView == null) {
+                return;
+            }
+        }
+        final WebView targetWebView = webView;
+        Node document = PARSER.parse(detail.getContent());
+        String html = RENDERER.render(document);
+        // 安全处理：完整转义所有可能引起 JS 注入的字符
+        String escapedHtml = escapeForJsString(html);
+        Platform.runLater(() -> {
+            try {
+                // 通过 JS 变量赋值传递 HTML，避免直接拼接 innerHTML 引起注入
+                targetWebView.getEngine().executeScript(
+                        "var h = decodeURIComponent('" + escapedHtml + "');" +
+                                "document.getElementById('content').innerHTML = h;");
+                Object result = targetWebView.getEngine()
+                        .executeScript("document.getElementById('content').offsetHeight");
+                if (result instanceof Number) {
+                    double h = ((Number) result).doubleValue() + 16;
+                    targetWebView.setPrefHeight(h);
+                    targetWebView.setMinHeight(h);
+                    targetWebView.setMaxHeight(h);
+                }
+                // 流式输出时自动滚动到底部（用户正在观看生成过程）
+                if (activeScrollPane != null) {
+                    autoScrollToBottom(activeScrollPane);
+                }
+                // 流式更新后重新注入复制按钮（innerHTML 替换会丢失）
+                targetWebView.getEngine().executeScript(
+                        "if(window.__cbInit){window.__cbInit=false;}" + COPY_BTN_JS);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to update WebView content: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * 对 HTML 字符串进行 JS 字符串安全转义
+     * 使用 URL 编码传递，彻底避免 JS 注入
+     */
+    private static String escapeForJsString(String html) {
+        try {
+            return java.net.URLEncoder.encode(html, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            // fallback：手动转义关键字符
+            return html.replace("\\", "\\\\")
+                    .replace("'", "\\'")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("</", "<\\/")
+                    .replace("\u2028", "\\u2028")
+                    .replace("\u2029", "\\u2029");
+        }
+    }
+
+    // ==================== 虚拟化支持 ====================
+
+    /**
+     * 虚拟化：限制活跃 WebView 数量，超出视口的消息替换为轻量占位符
+     */
+    private static void virtualize(ScrollPane scrollPane, VBox vBox) {
+        var nodes = vBox.getChildren();
+        if (nodes.size() <= MAX_ACTIVE_WEBVIEWS || MESSAGE_DETAILS.isEmpty()) {
+            return;
+        }
+
+        double vvalue = scrollPane.getVvalue();
+        double contentHeight = vBox.getHeight();
+        double viewportHeight = scrollPane.getViewportBounds().getHeight();
+
+        if (contentHeight <= 0 || viewportHeight <= 0) return;
+
+        double scrollY = vvalue * (contentHeight - viewportHeight);
+        double viewTop = scrollY - VIRTUALIZE_BUFFER_PX;
+        double viewBottom = scrollY + viewportHeight + VIRTUALIZE_BUFFER_PX;
+        boolean wasNearBottom = isNearBottom(scrollPane);
+
+        double nodeY = 0;
+        boolean changed = false;
+        for (int i = 0; i < nodes.size() && i < MESSAGE_DETAILS.size(); i++) {
+            var node = nodes.get(i);
+            double nodeHeight = node.getBoundsInParent().getHeight();
+            if (nodeHeight <= 0) nodeHeight = DEFAULT_PLACEHOLDER_HEIGHT;
+
+            boolean inView = isInViewport(nodeY, nodeHeight, viewTop, viewBottom);
+            var msgDetail = MESSAGE_DETAILS.get(i);
+
+            if (inView && node instanceof Region && !(node instanceof WebView) && !(node instanceof HBox)) {
+                // 在视口内且是占位符 → 物化为 WebView
+                materializeAt(vBox, i, msgDetail, scrollPane);
+                changed = true;
+            } else if (!inView && node instanceof WebView wv) {
+                // 不在视口且是 WebView → 替换为占位符
+                String uuid = msgDetail.getUuid();
+                ROBOT_WEBVIEW_MAP.remove(uuid);
+                wv.getEngine().loadContent(""); // 释放 WebView 资源
+                Region placeholder = createPlaceholder(nodeHeight);
+                nodes.set(i, placeholder);
+                changed = true;
+            }
+
+            nodeY += nodeHeight;
+        }
+
+        // 虚拟化变更后批量执行一次滚动修正，避免逐条触发
+        if (changed) {
+            Platform.runLater(() -> {
+                if (wasNearBottom) {
+                    scrollPane.setVvalue(1.0);
+                }
+            });
+        }
+    }
+
+    /**
+     * 在指定索引位置将占位符物化为 WebView
+     */
+    private static void materializeAt(VBox vBox, int index, ChatDetail detail, ScrollPane scrollPane) {
+        String uuid = detail.getUuid();
+        if (ROBOT_WEBVIEW_MAP.containsKey(uuid)) return;
+
+        Region oldPlaceholder = (Region) vBox.getChildren().get(index);
+        double placeholderHeight = oldPlaceholder.getPrefHeight();
+
+        Node document = PARSER.parse(detail.getContent());
+        String html = RENDERER.render(document);
+
+        WebView webView = new WebView();
+        webView.setPrefWidth(CHAT_VIEW_WIDTH);
+        webView.setMaxWidth(CHAT_VIEW_WIDTH);
+        webView.setMinWidth(CHAT_VIEW_WIDTH);
+        webView.setPrefHeight(placeholderHeight);
+        webView.setMinHeight(placeholderHeight);
+        webView.setMaxHeight(Double.MAX_VALUE);
+        webView.getEngine().setJavaScriptEnabled(true);
+
+        String fullHtml = buildFullHtml(html);
+        loadHtmlToWebView(webView, fullHtml);
+        webView.getEngine().getLoadWorker().stateProperty().addListener((obs, o, n) -> {
+            if (n == Worker.State.SUCCEEDED) {
+                Platform.runLater(() -> Platform.runLater(() -> {
+                    try {
+                        Object result = webView.getEngine()
+                                .executeScript("var el = document.getElementById('content'); el ? el.offsetHeight : 0");
+                        if (result instanceof Number) {
+                            double h = ((Number) result).doubleValue() + 16;
+                            if (h > 16) {
+                                webView.setPrefHeight(h);
+                                webView.setMinHeight(h);
+                                webView.setMaxHeight(h);
+                            }
+                        }
+                        webView.getEngine().executeScript(COPY_BTN_JS);
+                    } catch (Exception e) {
+                        System.err.println("Warning: Failed to adjust WebView height: " + e.getMessage());
+                    }
+                    autoScrollToBottom(scrollPane);
+                }));
+            }
+        });
+
+        ROBOT_WEBVIEW_MAP.put(uuid, webView);
+        vBox.getChildren().set(index, webView);
+    }
+
+    /**
+     * 判断节点 Y 坐标区间是否在视口内
+     */
+    private static boolean isInViewport(double nodeY, double nodeHeight, double viewTop, double viewBottom) {
+        return (nodeY + nodeHeight > viewTop) && (nodeY < viewBottom);
+    }
+
+    /**
+     * 同步物化最新消息（用于流式更新场景）
+     */
+    private static WebView materializeLatestMessage() {
+        if (MESSAGE_DETAILS.isEmpty()) return null;
+        int lastIdx = MESSAGE_DETAILS.size() - 1;
+        ChatDetail latest = MESSAGE_DETAILS.get(lastIdx);
+        if (!ChatEnum.ROBOT.name().equals(latest.getType())) return null;
+        if (ROBOT_WEBVIEW_MAP.containsKey(latest.getUuid())) return null;
+
+        Node document = PARSER.parse(latest.getContent());
+        String html = RENDERER.render(document);
+        WebView webView = new WebView();
+        webView.setPrefWidth(CHAT_VIEW_WIDTH);
+        webView.setMaxWidth(CHAT_VIEW_WIDTH);
+        webView.setMinWidth(CHAT_VIEW_WIDTH);
+        webView.setPrefHeight(DEFAULT_PLACEHOLDER_HEIGHT);
+        webView.setMinHeight(DEFAULT_PLACEHOLDER_HEIGHT);
+        webView.setMaxHeight(Double.MAX_VALUE);
+        webView.getEngine().setJavaScriptEnabled(true);
+        loadHtmlToWebView(webView, buildFullHtml(html));
+        ROBOT_WEBVIEW_MAP.put(latest.getUuid(), webView);
+        return webView;
+    }
+
+    /**
+     * 创建轻量占位符节点
+     */
+    private static Region createPlaceholder(double height) {
+        Region region = new Region();
+        region.setPrefHeight(height);
+        region.setMinHeight(height);
+        region.setMaxHeight(height);
+        region.setPrefWidth(CHAT_VIEW_WIDTH);
+        return region;
+    }
+
+    /**
+     * 构建完整 HTML 页面，CSS 已预计算为常量，仅拼接内容部分
+     */
+    private static String buildFullHtml(String html) {
+        return HTML_HEAD + html + HTML_TAIL;
+    }
+
+    /**
+     * 通过 Data URI (Base64) 加载 HTML 到 WebView，确保 UTF-8 编码正确（解决 Emoji 乱码）。
+     * JavaFX loadContent(String) 在 JNI 层可能导致多字节 Unicode 字符损坏，
+     * 使用 Base64 编码的 data: URI 可以完全控制编码链路。
+     */
+    private static void loadHtmlToWebView(WebView webView, String html) {
+        String base64 = Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.UTF_8));
+        webView.getEngine().load("data:text/html;charset=utf-8;base64," + base64);
+    }
+
+    private static HBox getHBox(ChatDetail detail) {
+        Label label = new Label(detail.getContent());
+        label.setWrapText(true);
+        label.setMaxWidth(TEXTAREA_WIDTH * 0.78);
+        label.setStyle(
+                "-fx-background-color: linear-gradient(to right, #3b82f6, #2563eb);" +
+                        "-fx-background-radius: 18 18 4 18;" +
+                        "-fx-padding: 10 16 10 16;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(37,99,235,0.25), 6, 0, 0, 2);"
+        );
+        HBox bubbleBox = new HBox(label);
+        bubbleBox.setAlignment(Pos.CENTER_RIGHT);
+        bubbleBox.setPadding(new Insets(2, 0, 2, 0));
+        return bubbleBox;
+    }
+}

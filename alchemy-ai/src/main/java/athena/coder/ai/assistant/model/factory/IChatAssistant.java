@@ -1,0 +1,79 @@
+package athena.coder.ai.assistant.model.factory;
+
+import athena.coder.ai.assistant.agent.PlannerAgent;
+import athena.coder.ai.assistant.agent.UserFaceAssistant;
+import athena.coder.ai.assistant.model.ByteCountEstimator;
+import athena.coder.ai.rag.EmbeddingModels;
+import athena.coder.ai.rag.SqliteEmbeddingStore;
+import athena.coder.ai.spi.AiInfra;
+import athena.coder.ai.tool.ToolRegistry;
+import athena.coder.entity.model.EmbeddingModelEnum;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.memory.chat.TokenWindowChatMemory;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
+import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.store.embedding.EmbeddingStore;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Map;
+
+public interface IChatAssistant {
+
+    <T> T getChatAssistant(String apiKey, Class<T> agentClass);
+
+    /**
+     * 获取智能体实例 - 通过 ToolRegistry 获取对应 Agent 的工具集
+     *
+     * @param agentClass 智能体接口的 Class 对象
+     * @param model      ChatModel 实例
+     * @param <T>        智能体接口类型
+     * @return 配置好的智能体实例
+     */
+    default <T> T getAssistant(Class<T> agentClass, ChatModel model) {
+        Map<ToolSpecification, ToolExecutor> tools = ToolRegistry.getToolsForAgent(agentClass);
+
+        AiServices<T> builder = AiServices.builder(agentClass)
+                .chatModel(model)
+                .tools(tools)
+                .chatMemoryProvider(memoryId -> {
+                    var memoryBuilder = TokenWindowChatMemory.builder()
+                            .id(memoryId)
+                            .maxTokens(26000, new ByteCountEstimator());
+                    if (memoryId != null && !"default".equals(memoryId) && !memoryId.equals(0L)) {
+                        memoryBuilder.chatMemoryStore(AiInfra.chatMemory(agentClass.getSimpleName()));
+                    }
+                    // 否则 TokenWindowChatMemory 默认使用 InMemoryChatMemoryStore
+                    return memoryBuilder.build();
+                });
+        // 入口分流与规划需要项目知识增强；RAG 不可用时 retriever 静默返回空
+        if (agentClass == UserFaceAssistant.class || agentClass == PlannerAgent.class) {
+            String projectPath = AiInfra.projectPath();
+            EmbeddingModelEnum embeddingModelEnum = EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
+            EmbeddingModel embeddingModel = EmbeddingModels.get(embeddingModelEnum);
+            EmbeddingStore<TextSegment> store = new SqliteEmbeddingStore(projectKey(projectPath), embeddingModelEnum.key());
+            EmbeddingStoreContentRetriever retriever = EmbeddingStoreContentRetriever.builder()
+                    .embeddingStore(store)
+                    .embeddingModel(embeddingModel)
+                    .build();
+            builder.contentRetriever(retriever);
+        }
+        return builder.build();
+    }
+
+    private static String projectKey(String projectPath) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(projectPath.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest, 0, 8);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
+    }
+}

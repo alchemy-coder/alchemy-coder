@@ -1,0 +1,108 @@
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  margin:0;padding:16px 0;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  font-size:14px;line-height:1.7;color:#1e293b;background:transparent
+}
+
+::-webkit-scrollbar{display:none}
+::selection{background:#bfdbfe;color:#1e293b}
+
+#content{word-wrap:break-word;overflow-wrap:break-word;max-width:100%}
+#content>:first-child{margin-top:0}
+#content>:last-child{margin-bottom:0}
+
+/* ── 排版 ── */
+h1,h2,h3,h4,h5,h6{margin-top:1.2em;margin-bottom:.4em;font-weight:600;line-height:1.4;color:#0f172a}
+h1{font-size:1.4em}h2{font-size:1.2em}h3{font-size:1.1em}h4{font-size:1em;color:#334155}
+p{margin-bottom:10px;line-height:1.7}
+a{color:#2563eb;text-decoration:none}
+strong,b{font-weight:600;color:#0f172a}
+em,i{color:#475569}
+ul,ol{margin-bottom:10px;padding-left:1.8em}
+li{margin-bottom:3px}
+
+blockquote{
+  margin:12px 0;padding:10px 16px;
+  border-left:2px solid #cbd5e1;background:#f8fafc;
+  color:#64748b;border-radius:0 6px 6px 0
+}
+blockquote p{margin-bottom:4px;font-size:13.5px;color:#64748b}
+blockquote p:last-child{margin-bottom:0}
+
+hr{border:none;height:1px;background:#e8ecf1;margin:16px 0}
+
+img{max-width:100%;height:auto;border-radius:6px;margin:8px 0}
+img.emoji{height:1em;width:1em;margin:0 .05em 0 .1em;vertical-align:-.1em;border-radius:0}
+
+/* ── 内联代码 ── */
+:not(pre)>code{
+  font-family:'JetBrains Mono','SF Mono',Menlo,Monaco,Consolas,monospace;
+  font-size:.88em;padding:2px 6px;background:#f1f5f9;border-radius:4px;color:#94a3b8
+}
+
+/* ── 代码块 ── */
+.code-wrap{
+  margin:14px 0;border-radius:8px;overflow:hidden;
+  background:#f8fafc;border:1px solid #e2e8f0
+}
+.code-wrap .cp-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 14px;background:#f1f5f9;font-size:11px;color:#64748b;
+  user-select:none;border-bottom:1px solid #e2e8f0
+}
+.code-wrap .cp-bar span{font-weight:500;text-transform:uppercase;letter-spacing:.5px;user-select:none}
+.code-wrap .cp-btn{
+  background:none;border:1px solid #cbd5e1;color:#64748b;
+  font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;
+  transition:all .15s
+}
+.code-wrap .cp-btn:hover{background:#e2e8f0;color:#334155;border-color:#94a3b8}
+.code-wrap pre{margin:0;padding:14px 16px;overflow-x:auto}
+.code-wrap pre code{
+  padding:0;background:none;color:#334155;
+  font-size:13px;line-height:1.65;border-radius:0
+}
+
+/* ── 表格 ── */
+table{
+  width:100%;margin:12px 0;border-collapse:collapse;
+  font-size:13.5px;border:1px solid #e8ecf1;border-radius:8px;overflow:hidden
+}
+th{background:#f8fafc;font-weight:600;color:#0f172a;text-align:left}
+th,td{padding:8px 14px;border-bottom:1px solid #e8ecf1}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfc}
+
+/* ══════════════════════════════════════
+   消息卡片系统
+   ══════════════════════════════════════ */
+
+/* 通用卡片底板 */
+.msg-card{padding:20px 10px;margin-bottom:12px;max-width:100%}
+
+/* 进度卡片 */
+.card-progress #content{font-size:13.5px;color:#475569}
+.card-progress #content p{margin-bottom:3px;font-size:13.5px;color:#475569}
+
+/* 人工确认卡片：低调版 — 白底 + 浅灰发丝边框，无色带无阴影，与其他卡片视觉一致 */
+.card-confirm{
+  border:1px solid #e2e8f0;
+  background:#ffffff;
+  border-radius:12px
+}
+.card-confirm #content{font-size:14px;color:#334155}
+.card-confirm #content h2{font-size:16px;color:#1e293b;margin-bottom:8px}
+.card-confirm #content blockquote{
+  border-left:3px solid #e2e8f0;background:#f8fafc;
+  padding:6px 12px;border-radius:6px;color:#78716c;font-size:13px
+}
+
+/* 进度延续消息（同一 uuid，无间距无阴影无彩条） */
+.progress-continuation{
+  padding:4px 10px 6px;margin-top:-8px;margin-bottom:0;
+  border-radius:0;background:transparent
+}
+.progress-continuation #content{font-size:13px;color:#64748b}
+.progress-continuation #content p{margin-bottom:1px;font-size:13px;color:#64748b;line-height:1.5}
