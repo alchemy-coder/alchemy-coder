@@ -1,5 +1,7 @@
 package athena.coder.ai.tool.strategy;
 
+import athena.coder.ai.util.ProjectType;
+
 import java.util.List;
 
 public class GoCommandBuilder extends AbstractCommandBuilder {
@@ -10,7 +12,7 @@ public class GoCommandBuilder extends AbstractCommandBuilder {
 
     @Override
     protected String getBaseCommand() {
-        return "go";
+        return ProjectType.GO.executable();
     }
 
     @Override

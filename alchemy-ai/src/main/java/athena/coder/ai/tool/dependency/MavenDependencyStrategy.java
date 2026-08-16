@@ -1,6 +1,7 @@
 package athena.coder.ai.tool.dependency;
 
 import athena.coder.ai.tool.base.ToolResult;
+import athena.coder.ai.util.ProjectType;
 import athena.coder.ai.util.ProjectTypeUtil;
 
 import java.nio.file.Files;
@@ -49,7 +50,7 @@ public class MavenDependencyStrategy extends AbstractDependencyStrategy {
 
     @Override
     protected List<String> buildListCommand(boolean transitive) {
-        return List.of(factory.isWindowsPlatform() ? "mvn.cmd" : "mvn", "dependency:tree");
+        return List.of(ProjectType.MAVEN.executable(), "dependency:tree");
     }
 
     @Override
@@ -63,13 +64,13 @@ public class MavenDependencyStrategy extends AbstractDependencyStrategy {
     protected List<List<String>> buildUpgradeCommands(String packageName, String targetVersion, boolean testAfterUpgrade) {
         List<List<String>> commands = new ArrayList<>();
         commands.add(List.of(
-                factory.isWindowsPlatform() ? "mvn.cmd" : "mvn",
+                ProjectType.MAVEN.executable(),
                 "versions:use-dep-version",
                 "-Dincludes=" + packageName,
                 "-DdepVersion=" + targetVersion
         ));
         if (testAfterUpgrade) {
-            commands.add(List.of(factory.isWindowsPlatform() ? "mvn.cmd" : "mvn", "test"));
+            commands.add(List.of(ProjectType.MAVEN.executable(), "test"));
         }
         return commands;
     }

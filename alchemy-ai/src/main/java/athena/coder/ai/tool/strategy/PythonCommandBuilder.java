@@ -1,5 +1,7 @@
 package athena.coder.ai.tool.strategy;
 
+import athena.coder.ai.util.ProjectType;
+
 import java.util.List;
 
 public class PythonCommandBuilder extends AbstractCommandBuilder {
@@ -10,7 +12,7 @@ public class PythonCommandBuilder extends AbstractCommandBuilder {
 
     @Override
     protected String getBaseCommand() {
-        return getExecutable("python", "python3");
+        return ProjectType.PYTHON.executable();
     }
 
     @Override
@@ -32,16 +34,6 @@ public class PythonCommandBuilder extends AbstractCommandBuilder {
         if (!command.contains("-v")) {
             command.add("-v");
         }
-    }
-
-    @Override
-    public List<String> buildCompileCommand() {
-        return List.of(getBaseCommand(), "-m", "compileall", ".");
-    }
-
-    @Override
-    public List<String> buildDiagnosticsCommand() {
-        return List.of(getBaseCommand(), "-m", "pyflakes", ".");
     }
 
     @Override

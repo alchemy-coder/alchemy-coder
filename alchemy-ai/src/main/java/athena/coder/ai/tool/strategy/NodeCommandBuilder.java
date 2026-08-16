@@ -1,5 +1,7 @@
 package athena.coder.ai.tool.strategy;
 
+import athena.coder.ai.util.ProjectType;
+
 import java.util.List;
 
 public class NodeCommandBuilder extends AbstractCommandBuilder {
@@ -10,7 +12,7 @@ public class NodeCommandBuilder extends AbstractCommandBuilder {
 
     @Override
     protected String getBaseCommand() {
-        return "npm";
+        return ProjectType.NODE.executable();
     }
 
     @Override
@@ -18,15 +20,5 @@ public class NodeCommandBuilder extends AbstractCommandBuilder {
         command.add("--");
         command.add("--grep");
         command.add(filter);
-    }
-
-    @Override
-    public List<String> buildCompileCommand() {
-        return List.of("npm", "run", "build", "--if-present");
-    }
-
-    @Override
-    public List<String> buildDiagnosticsCommand() {
-        return List.of("npx", "tsc", "--noEmit");
     }
 }

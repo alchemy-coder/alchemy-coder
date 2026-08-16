@@ -1,8 +1,9 @@
 package athena.coder.ai.tool.dependency;
 
-import athena.coder.ai.tool.AbstractBaseTool;
+import athena.coder.ai.tool.util.CommandPathResolver;
 import athena.coder.ai.tool.util.CommandSafetyValidator;
 import athena.coder.ai.tool.util.ProjectContextHelper;
+import athena.coder.ai.tool.base.ToolConstants;
 import athena.coder.ai.tool.base.ToolResult;
 import athena.coder.ai.tool.config.ToolConfigCenter;
 import athena.coder.ai.tool.exception.ErrorCode;
@@ -17,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class DependencyStrategyFactory {
@@ -52,24 +52,8 @@ public class DependencyStrategyFactory {
         return strategy;
     }
 
-    public CommandResult parseToCommandResult(String rawResult) {
-        String[] parts = rawResult.split("\n", 2);
-        if (parts.length == 0) {
-            return new CommandResult(-1, "", "空结果");
-        }
-
-        String prefix = parts[0];
-        int exitCode;
-        if (prefix.startsWith("SUCCESS")) {
-            exitCode = 0;
-        } else if (prefix.startsWith("FAILED") || prefix.startsWith("ERROR")) {
-            exitCode = 1;
-        } else {
-            exitCode = -1;
-        }
-
-        String output = parts.length > 1 ? parts[1] : "";
-        return new CommandResult(exitCode, output, output);
+    public ToolConstants.CommandResult parseToCommandResult(String rawResult) {
+        return ToolConstants.parseResult(rawResult);
     }
 
     public String executeToolCommand(List<String> command, Path workDir, int timeout) {
@@ -94,30 +78,19 @@ public class DependencyStrategyFactory {
         return output;
     }
 
-    public boolean isWindowsPlatform() {
-        return AbstractBaseTool.isWindows();
-    }
-
     public boolean checkCommandExists(String cmd) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(isWindowsPlatform() ? "where" : "which", cmd);
-            Process process = pb.start();
-            boolean completed = process.waitFor(2, TimeUnit.SECONDS);
-            return completed && process.exitValue() == 0;
-        } catch (Exception e) {
-            return false;
-        }
+        return CommandPathResolver.exists(cmd);
     }
 
     public ToolResult executeListDependencies(List<String> command, int timeout, String typeLabel) {
         String rawResult = executeToolCommand(command, getWorkDirectory(), timeout);
-        CommandResult result = parseToCommandResult(rawResult);
+        ToolConstants.CommandResult result = parseToCommandResult(rawResult);
 
         if (result.isSuccess()) {
             return ToolResult.success(
-                    typeLabel + " 项目依赖列表:\n\n" + truncateOutputString(result.output()));
+                    typeLabel + " 项目依赖列表:\n\n" + truncateOutputString(result.body()));
         }
-        return ToolResult.error("获取依赖列表失败:\n" + result.error());
+        return ToolResult.error("获取依赖列表失败:\n" + result.body());
     }
 
     public ToolResult executeUpgradeCommands(List<List<String>> commands, int timeout,
@@ -125,11 +98,11 @@ public class DependencyStrategyFactory {
         StringBuilder results = new StringBuilder();
         for (List<String> cmd : commands) {
             String rawResult = executeToolCommand(cmd, getWorkDirectory(), timeout);
-            CommandResult result = parseToCommandResult(rawResult);
+            ToolConstants.CommandResult result = parseToCommandResult(rawResult);
 
             results.append("> ").append(String.join(" ", cmd))
                     .append("\n")
-                    .append(result.isSuccess() ? result.output() : "错误: " + result.error())
+                    .append(result.isSuccess() ? result.body() : "错误: " + result.body())
                     .append("\n\n");
 
             if (!result.isSuccess() && !testAfterUpgrade) {
@@ -146,14 +119,14 @@ public class DependencyStrategyFactory {
 
     public ToolResult executeSecurityAudit(List<String> command, int timeout, String fallbackMsg) {
         String rawResult = executeToolCommand(command, getWorkDirectory(), timeout);
-        CommandResult result = parseToCommandResult(rawResult);
+        ToolConstants.CommandResult result = parseToCommandResult(rawResult);
 
         if (result.isSuccess()) {
-            return ToolResult.success("安全审计完成，未发现漏洞 ✓\n\n" + truncateOutputString(result.output()));
+            return ToolResult.success("安全审计完成，未发现漏洞 ✓\n\n" + truncateOutputString(result.body()));
         } else if (result.exitCode() == 1) {
-            return ToolResult.warn("发现潜在安全问题:\n\n" + truncateOutputString(result.output()));
+            return ToolResult.warn("发现潜在安全问题:\n\n" + truncateOutputString(result.body()));
         }
-        return ToolResult.error("审计执行失败:\n" + result.error());
+        return ToolResult.error("审计执行失败:\n" + result.body());
     }
 
     private void registerDefaultStrategies() {

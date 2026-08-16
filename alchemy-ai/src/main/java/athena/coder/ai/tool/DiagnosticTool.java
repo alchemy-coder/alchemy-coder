@@ -9,6 +9,7 @@ import athena.coder.ai.tool.exception.ErrorCode;
 import athena.coder.ai.tool.exception.ToolValidationException;
 import athena.coder.ai.tool.strategy.CommandBuilderStrategy;
 import athena.coder.ai.spi.ErrorLogger;
+import athena.coder.ai.util.ProjectType;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 
@@ -30,9 +31,9 @@ public class DiagnosticTool extends ProcessBasedTool {
     public DiagnosticTool() {
         super();
         this.customDiagnosticsHandlers = Map.of(
-                "javac", this::compileWithJavac,
-                "python", this::runPythonDiagnostics,
-                "node", this::runNodeDiagnostics
+                ProjectType.JAVAC.key(), this::compileWithJavac,
+                ProjectType.PYTHON.key(), this::runPythonDiagnostics,
+                ProjectType.NODE.key(), this::runNodeDiagnostics
         );
     }
 

@@ -8,7 +8,6 @@ import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.exception.RocAgentException;
 
 import java.util.Map;
-import java.util.Objects;
 
 import static athena.coder.ai.assistant.model.factory.AiAssistantFactory.newChatAssistant;
 import static athena.coder.ai.workflow.entity.WorkflowState.WORKFLOW_MODE;
@@ -43,9 +42,6 @@ public class RouterNode extends AbstractAgentNode {
                     throw new RocAgentException("路由智能体路由失败", e);
                 });
 
-        if (Objects.isNull(result) || Objects.isNull(result.workflowMode())) {
-            throw new RocAgentException("路由智能体路由失败");
-        }
         WorkflowMode mode = result.workflowMode();
         logInfo("RouterNode 路由完成: workflowMode=" + mode);
         return Map.of(WORKFLOW_MODE, mode);

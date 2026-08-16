@@ -21,11 +21,8 @@ public class JavaCodeAnalyzer extends AbstractCodeAnalyzer {
             String line = lines.get(i).trim();
             int lineNum = i + 1;
 
-            if (line.equals("catch") || line.startsWith("catch (") || line.startsWith("catch(")) {
-                if (i + 1 < lines.size() && lines.get(i + 1).trim().equals("}")) {
-                    problems.add(new CodeProblem(lineNum, "WARNING", "空的 catch 块，建议添加日志或注释说明为何忽略异常"));
-                }
-            }
+            String nextLine = i + 1 < lines.size() ? lines.get(i + 1).trim() : "";
+            checkEmptyCatch(line, nextLine, lineNum, problems);
 
             if (line.contains("System.out.print") || line.contains("System.err.print")) {
                 problems.add(new CodeProblem(lineNum, "INFO", "生产代码中不应使用 System.out/err，建议使用日志框架"));

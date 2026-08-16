@@ -11,7 +11,9 @@ public interface CommandBuilderStrategy {
 
     List<String> buildTestCommand(String testFilter);
 
-    List<String> buildCompileCommand();
+    default List<String> buildCompileCommand() {
+        throw new UnsupportedOperationException(getProjectType() + " 不支持编译命令");
+    }
 
     List<String> buildDiagnosticsCommand();
 

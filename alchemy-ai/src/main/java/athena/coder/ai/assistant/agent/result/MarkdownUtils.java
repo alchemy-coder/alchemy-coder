@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
  * Markdown 代码块剥离工具（共享实现）
  * <p>
  * LLM 输出常被 ```json ... ``` 包裹，本工具统一剥离逻辑，
- * 供 {@link MarkdownStrippingDeserializer} 和 AbstractAgentNode 等共用。
+ * 供 {@link MarkdownStrippingDeserializer} 等共用。
  */
 public final class MarkdownUtils {
 

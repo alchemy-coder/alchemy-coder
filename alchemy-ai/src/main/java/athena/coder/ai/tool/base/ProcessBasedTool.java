@@ -66,21 +66,17 @@ public abstract class ProcessBasedTool extends AbstractBaseTool {
     }
 
     protected String processResult(String rawResult) {
-        if (rawResult.startsWith(PREFIX_SUCCESS)) {
-            String output = stripPrefix(rawResult);
-            if (output.isBlank()) {
-                return OK_PREFIX + "命令执行成功（无输出）";
+        ToolConstants.CommandResult result = ToolConstants.parseResult(rawResult);
+        return switch (result.status()) {
+            case SUCCESS -> {
+                String output = result.body();
+                yield output.isBlank() ? OK_PREFIX + "命令执行成功（无输出）" : OK_PREFIX + output;
             }
-            return OK_PREFIX + output;
-        } else if (rawResult.startsWith(PREFIX_FAILED)) {
-            return ERR_PREFIX + "命令执行失败（退出码非0）:\n" + stripPrefix(rawResult);
-        } else if (rawResult.startsWith(PREFIX_ERROR)) {
-            return ERR_PREFIX + "命令执行失败:\n" + stripPrefix(rawResult);
-        } else if (rawResult.startsWith(PREFIX_TIMEOUT)) {
-            return ERR_PREFIX + "命令执行超时（" + getMyTimeout() + "秒限制）";
-        } else {
-            return rawResult;
-        }
+            case FAILED -> ERR_PREFIX + "命令执行失败（退出码非0）:\n" + result.body();
+            case ERROR -> ERR_PREFIX + "命令执行失败:\n" + result.body();
+            case TIMEOUT -> ERR_PREFIX + "命令执行超时（" + getMyTimeout() + "秒限制）";
+            case UNKNOWN -> rawResult;
+        };
     }
 
     protected String maskSensitiveInfo(String text) {

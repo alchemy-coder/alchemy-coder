@@ -1,44 +1,31 @@
 package athena.coder.ai.util;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * 项目类型 String key 门面，委托 {@link ProjectType} 枚举（唯一来源）。
+ * <p>
+ * 保留 String 常量以兼容既有的 String 签名调用点；新代码请直接使用 {@link ProjectType}。
+ */
 public final class ProjectTypeUtil {
 
-    public static final String MAVEN = "maven";
-    public static final String GRADLE = "gradle";
-    public static final String NODE = "node";
-    public static final String GO = "go";
-    public static final String RUST = "rust";
-    public static final String PYTHON = "python";
-    public static final String JAVAC = "javac";
-    public static final String UNKNOWN = "unknown";
+    public static final String MAVEN = ProjectType.MAVEN.key();
+    public static final String GRADLE = ProjectType.GRADLE.key();
+    public static final String NODE = ProjectType.NODE.key();
+    public static final String GO = ProjectType.GO.key();
+    public static final String RUST = ProjectType.RUST.key();
+    public static final String PYTHON = ProjectType.PYTHON.key();
+    public static final String JAVAC = ProjectType.JAVAC.key();
+    public static final String UNKNOWN = ProjectType.UNKNOWN.key();
 
     private ProjectTypeUtil() {
     }
 
-    /**
-     * 检测项目类型
-     * <p>
-     * 返回值: maven / gradle / node / go / rust / python / javac / unknown
-     */
     public static String detect(Path dir) {
-        if (dir == null) return UNKNOWN;
-        if (Files.exists(dir.resolve("pom.xml"))) return MAVEN;
-        if (Files.exists(dir.resolve("build.gradle")) || Files.exists(dir.resolve("build.gradle.kts"))) return GRADLE;
-        if (Files.exists(dir.resolve("package.json"))) return NODE;
-        if (Files.exists(dir.resolve("go.mod"))) return GO;
-        if (Files.exists(dir.resolve("Cargo.toml"))) return RUST;
-        if (Files.exists(dir.resolve("pyproject.toml")) ||
-                Files.exists(dir.resolve("requirements.txt")) ||
-                Files.exists(dir.resolve("setup.py")) ||
-                Files.exists(dir.resolve("Pipfile"))) return PYTHON;
-        if (Files.exists(dir.resolve("src").resolve("main").resolve("java"))) return JAVAC;
-        return UNKNOWN;
+        return ProjectType.detect(dir).key();
     }
 
     public static String detect(String dirPath) {
-        if (dirPath == null || dirPath.isBlank()) return UNKNOWN;
-        return detect(Path.of(dirPath));
+        return ProjectType.detect(dirPath).key();
     }
 }

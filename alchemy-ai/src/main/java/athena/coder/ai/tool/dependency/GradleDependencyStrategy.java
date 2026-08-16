@@ -1,6 +1,7 @@
 package athena.coder.ai.tool.dependency;
 
 import athena.coder.ai.tool.base.ToolResult;
+import athena.coder.ai.util.ProjectType;
 import athena.coder.ai.util.ProjectTypeUtil;
 
 import java.nio.file.Files;
@@ -52,7 +53,7 @@ public class GradleDependencyStrategy extends AbstractDependencyStrategy {
 
     @Override
     protected List<String> buildListCommand(boolean transitive) {
-        String gradleCmd = factory.isWindowsPlatform() ? "gradle.bat" : "gradle";
+        String gradleCmd = ProjectType.GRADLE.executable();
         if (transitive) {
             return List.of(gradleCmd, "dependencies");
         }
@@ -70,12 +71,12 @@ public class GradleDependencyStrategy extends AbstractDependencyStrategy {
     protected List<List<String>> buildUpgradeCommands(String packageName, String targetVersion, boolean testAfterUpgrade) {
         List<List<String>> commands = new ArrayList<>();
         commands.add(List.of(
-                factory.isWindowsPlatform() ? "gradle.bat" : "gradle",
+                ProjectType.GRADLE.executable(),
                 "upgradeDependency",
                 "--dependency " + packageName + ":" + targetVersion
         ));
         if (testAfterUpgrade) {
-            commands.add(List.of(factory.isWindowsPlatform() ? "gradle.bat" : "gradle", "test"));
+            commands.add(List.of(ProjectType.GRADLE.executable(), "test"));
         }
         return commands;
     }

@@ -89,8 +89,4 @@ public class ProcessCommandExecutor implements CommandExecutor {
                     "ProcessCommandExecutor", ErrorCode.INTERNAL_ERROR, e);
         }
     }
-
-    @Override
-    public void shutdown() {
-    }
 }

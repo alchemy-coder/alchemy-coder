@@ -1,5 +1,6 @@
 package athena.coder.ai.tool.dependency;
 
+import athena.coder.ai.tool.base.ToolConstants;
 import athena.coder.ai.tool.base.ToolResult;
 import athena.coder.ai.spi.ErrorLogger;
 
@@ -35,11 +36,11 @@ public abstract class AbstractDependencyStrategy implements DependencyStrategy {
     protected ToolResult runInstallCommand(List<String> command, String successMessage, String commandLabel) {
         try {
             String rawResult = factory.executeToolCommand(command, factory.getWorkDirectory(), timeout);
-            CommandResult result = factory.parseToCommandResult(rawResult);
+            ToolConstants.CommandResult result = factory.parseToCommandResult(rawResult);
             if (result.isSuccess()) {
                 return ToolResult.success(successMessage);
             }
-            return ToolResult.error(commandLabel + " 失败:\n" + result.error());
+            return ToolResult.error(commandLabel + " 失败:\n" + result.body());
         } catch (Exception e) {
             return ToolResult.error("添加" + getStrategyName() + "依赖失败", e);
         }

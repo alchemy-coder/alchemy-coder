@@ -163,8 +163,4 @@ public class SqliteEmbeddingStore implements EmbeddingStore<TextSegment> {
         AiInfra.embeddings().loadSnapshots(projectKey, model).keySet()
                 .forEach(path -> AiInfra.embeddings().deleteSnapshot(projectKey, model, path));
     }
-
-    public String getModel() {
-        return model;
-    }
 }

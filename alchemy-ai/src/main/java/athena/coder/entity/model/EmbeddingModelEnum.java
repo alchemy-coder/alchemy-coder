@@ -2,7 +2,6 @@ package athena.coder.entity.model;
 
 import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 
 import java.util.function.Function;
 
@@ -14,9 +13,6 @@ public enum EmbeddingModelEnum {
 
     QIANWEN_EMBEDDING_V4("qianwen", "text-embedding-v4",
             key -> QwenEmbeddingModel.builder().apiKey(key).modelName("text-embedding-v4").build()),
-
-    OPENAI_EMBEDDING_3_SMALL("openai", "text-embedding-3-small",
-            key -> OpenAiEmbeddingModel.builder().apiKey(key).modelName("text-embedding-3-small").build()),
     ;
 
     private final String model;

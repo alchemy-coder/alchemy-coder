@@ -8,6 +8,7 @@ import athena.coder.ai.rag.SqliteEmbeddingStore;
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.tool.ToolRegistry;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.util.ProjectKeyUtil;
 import athena.coder.entity.model.EmbeddingModelEnum;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.segment.TextSegment;
@@ -19,10 +20,6 @@ import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolExecutor;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.Map;
 
 public interface IChatAssistant {
@@ -59,7 +56,7 @@ public interface IChatAssistant {
             String projectPath = AiInfra.projectPath();
             EmbeddingModelEnum embeddingModelEnum = EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
             EmbeddingModel embeddingModel = EmbeddingModels.get(embeddingModelEnum);
-            EmbeddingStore<TextSegment> store = new SqliteEmbeddingStore(projectKey(projectPath), embeddingModelEnum.key());
+            EmbeddingStore<TextSegment> store = new SqliteEmbeddingStore(ProjectKeyUtil.projectKey(projectPath), embeddingModelEnum.key());
             EmbeddingStoreContentRetriever retriever = EmbeddingStoreContentRetriever.builder()
                     .embeddingStore(store)
                     .embeddingModel(embeddingModel)
@@ -67,15 +64,5 @@ public interface IChatAssistant {
             builder.contentRetriever(retriever);
         }
         return builder.build();
-    }
-
-    private static String projectKey(String projectPath) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(projectPath.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest, 0, 8);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 not available", e);
-        }
     }
 }

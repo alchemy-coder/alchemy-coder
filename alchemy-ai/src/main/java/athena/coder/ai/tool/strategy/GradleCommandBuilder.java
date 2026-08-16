@@ -10,6 +10,7 @@ public class GradleCommandBuilder extends AbstractCommandBuilder {
 
     @Override
     protected String getBaseCommand() {
+        // Gradle 命令构建使用 wrapper（./gradlew）；依赖管理用裸 gradle（见 ProjectType.GRADLE.executable()）
         return getExecutable("gradlew.bat", "./gradlew");
     }
 

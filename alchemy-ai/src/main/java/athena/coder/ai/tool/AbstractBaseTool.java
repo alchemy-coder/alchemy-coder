@@ -34,10 +34,6 @@ public abstract class AbstractBaseTool {
     protected static final String WARN_PREFIX = ToolConstants.WARN_PREFIX;
     protected static final String OK_PREFIX = ToolConstants.OK_PREFIX;
 
-    protected static final String PREFIX_SUCCESS = ToolConstants.PREFIX_SUCCESS;
-    protected static final String PREFIX_FAILED = ToolConstants.PREFIX_FAILED;
-    protected static final String PREFIX_ERROR = ToolConstants.PREFIX_ERROR;
-    protected static final String PREFIX_TIMEOUT = ToolConstants.PREFIX_TIMEOUT;
     protected static final boolean IS_WINDOWS = System.getProperty("os.name", "").toLowerCase().contains("win");
     protected final ToolConfigCenter config;
     protected final ToolRateLimiter rateLimiter;

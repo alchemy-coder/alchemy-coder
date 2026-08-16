@@ -21,16 +21,8 @@ import static athena.coder.ai.workflow.entity.NodeEnum.DEBUGGER;
 import static athena.coder.ai.workflow.entity.NodeEnum.REVIEWER;
 import static athena.coder.ai.workflow.entity.NodeEnum.SUMMARIZER;
 import static athena.coder.ai.workflow.entity.NodeEnum.TESTER;
-import static athena.coder.ai.workflow.entity.WorkflowState.ACCEPTANCE_CRITERIA;
-import static athena.coder.ai.workflow.entity.WorkflowState.CHANGED_DIFF_REF;
-import static athena.coder.ai.workflow.entity.WorkflowState.CHANGED_FILES;
-import static athena.coder.ai.workflow.entity.WorkflowState.FIX_STRATEGY;
 import static athena.coder.ai.workflow.entity.WorkflowState.NEXT_NODE;
-import static athena.coder.ai.workflow.entity.WorkflowState.ORIGINAL_REQUIREMENT;
-import static athena.coder.ai.workflow.entity.WorkflowState.PREVIOUS_FIXES;
-import static athena.coder.ai.workflow.entity.WorkflowState.REVIEW_RESULT;
 import static athena.coder.ai.workflow.entity.WorkflowState.SUMMARIZE_RESULT;
-import static athena.coder.ai.workflow.entity.WorkflowState.TEST_RESULT;
 import static org.bsc.langgraph4j.GraphDefinition.END;
 
 /**
@@ -49,17 +41,6 @@ import static org.bsc.langgraph4j.GraphDefinition.END;
 public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
 
     protected final Logger log = Logger.getLogger(getClass().getName());
-
-    /**
-     * 子图执行完成后需要 merge 回主图的结果 key
-     * （PLAN 由主图规划并经人工确认，子图不再产出，无需回传）
-     */
-    private static final String[] RESULT_KEYS = {
-            ACCEPTANCE_CRITERIA, ORIGINAL_REQUIREMENT,
-            CHANGED_FILES, CHANGED_DIFF_REF,
-            TEST_RESULT, FIX_STRATEGY, PREVIOUS_FIXES,
-            REVIEW_RESULT, SUMMARIZE_RESULT
-    };
 
     /**
      * 子工作流名称（用于日志与 UI 提示）
@@ -103,17 +84,9 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
     }
 
     /**
-     * 收集子图产物 merge 回主图，并输出最终 UI 结果
+     * 输出最终 UI 结果；子图产物经 side-effect 落盘，无需 merge 回主图
      */
     private Map<String, Object> collectResults(WorkflowState masterState, WorkflowState subState) {
-        Map<String, Object> results = new HashMap<>();
-        for (String key : RESULT_KEYS) {
-            Object value = subState.data().get(key);
-            if (value != null) {
-                results.put(key, value);
-            }
-        }
-
         Object summarizeResult = subState.data().get(SUMMARIZE_RESULT);
         if (summarizeResult != null) {
             String formattedReport = ReportFormatter.format(subState, String.valueOf(summarizeResult), workflowName());
@@ -122,7 +95,7 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
             ErrorLogger.warn(workflowName(), "提前终止，未生成最终总结报告");
             masterState.outputBotResponse("[警告] " + workflowName() + " 提前结束，未生成最终总结报告，请查看日志确认原因", ChatEnum.ROBOT_ERROR);
         }
-        return results;
+        return Map.of();
     }
 
     // ===== 同构质量闭环拓扑（编码/测试补全工作流共用）=====

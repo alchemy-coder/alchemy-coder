@@ -1,5 +1,7 @@
 package athena.coder.ai.tool.strategy;
 
+import athena.coder.ai.util.ProjectType;
+
 import java.util.List;
 
 public class RustCommandBuilder extends AbstractCommandBuilder {
@@ -10,7 +12,7 @@ public class RustCommandBuilder extends AbstractCommandBuilder {
 
     @Override
     protected String getBaseCommand() {
-        return "cargo";
+        return ProjectType.RUST.executable();
     }
 
     @Override

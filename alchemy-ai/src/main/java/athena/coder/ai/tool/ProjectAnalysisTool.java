@@ -5,6 +5,7 @@ import athena.coder.ai.tool.util.FileTypeConstants;
 import athena.coder.ai.tool.exception.ErrorCode;
 import athena.coder.ai.tool.exception.ToolValidationException;
 import athena.coder.ai.spi.ErrorLogger;
+import athena.coder.ai.util.ProjectType;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 
@@ -175,28 +176,16 @@ public class ProjectAnalysisTool extends FileSystemBasedTool {
     }
 
     private String detectBuildTool(Path dir) {
-        for (BuildToolDef def : BUILD_TOOL_DEFS) {
-            if (safeFileExists(dir.resolve(def.fileName))) {
-                return def.label;
-            }
-        }
-        return "未知（未识别到构建工具配置文件）";
-    }
-
-    private static final BuildToolDef[] BUILD_TOOL_DEFS = {
-            new BuildToolDef("pom.xml", "Maven (Java)"),
-            new BuildToolDef("build.gradle", "Gradle (Java/Kotlin)"),
-            new BuildToolDef("build.gradle.kts", "Gradle (Java/Kotlin)"),
-            new BuildToolDef("go.mod", "Go Modules"),
-            new BuildToolDef("Cargo.toml", "Cargo (Rust)"),
-            new BuildToolDef("pyproject.toml", "pyproject.toml (Python)"),
-            new BuildToolDef("requirements.txt", "pip + requirements.txt (Python)"),
-            new BuildToolDef("setup.py", "setup.py (Python)"),
-            new BuildToolDef("Pipfile", "Pipenv (Python)"),
-            new BuildToolDef("package.json", "npm/yarn (Node.js)"),
-    };
-
-    private record BuildToolDef(String fileName, String label) {
+        return switch (ProjectType.detect(dir)) {
+            case MAVEN -> "Maven (Java)";
+            case GRADLE -> "Gradle (Java/Kotlin)";
+            case NODE -> "npm/yarn (Node.js)";
+            case GO -> "Go Modules";
+            case RUST -> "Cargo (Rust)";
+            case PYTHON -> "Python";
+            case JAVAC -> "纯 Java (javac)";
+            case UNKNOWN -> "未知（未识别到构建工具配置文件）";
+        };
     }
 
     private record LangStats(int fileCount, int lineCount) {

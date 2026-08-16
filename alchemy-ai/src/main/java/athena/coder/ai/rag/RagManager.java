@@ -2,16 +2,13 @@ package athena.coder.ai.rag;
 
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.spi.ErrorLogger;
+import athena.coder.ai.util.ProjectKeyUtil;
 import athena.coder.entity.model.EmbeddingModelEnum;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +30,7 @@ public final class RagManager {
         t.setDaemon(true);
         return t;
     });
-    private final EmbeddingModelEnum modelEnum = EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
+    private static final EmbeddingModelEnum MODEL_ENUM = EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
 
     private RagManager() {
     }
@@ -41,20 +38,6 @@ public final class RagManager {
     public static RagManager getInstance() {
         return Holder.INSTANCE;
     }
-
-    /**
-     * 项目绝对路径 → SHA-256 前 8 字节 hex，隔离不同项目的向量数据
-     */
-    private static String projectKey(String projectPath) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(projectPath.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest, 0, 8);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
-    }
-
 
     private static String preprocessQuery(String query) {
         String cleaned = query.strip()
@@ -74,8 +57,8 @@ public final class RagManager {
         if (projectPath == null || projectPath.isBlank()) {
             return;
         }
-        String projectKey = projectKey(projectPath);
-        EmbeddingModelEnum currentEmbeddingModel = this.modelEnum;
+        String projectKey = ProjectKeyUtil.projectKey(projectPath);
+        EmbeddingModelEnum currentEmbeddingModel = MODEL_ENUM;
         String guardKey = projectKey + "|" + currentEmbeddingModel.key();
         if (!indexing.add(guardKey)) {
             return;
@@ -110,7 +93,7 @@ public final class RagManager {
             if (cleaned.isEmpty()) {
                 return List.of();
             }
-            EmbeddingModelEnum current = this.modelEnum;
+            EmbeddingModelEnum current = MODEL_ENUM;
             EmbeddingModel embeddingModel = EmbeddingModels.get(current);
             if (embeddingModel == null) {
                 return List.of();
@@ -137,7 +120,7 @@ public final class RagManager {
     }
 
     private SqliteEmbeddingStore storeFor(String projectPath, EmbeddingModelEnum model) {
-        String projectKey = projectKey(projectPath);
+        String projectKey = ProjectKeyUtil.projectKey(projectPath);
         return new SqliteEmbeddingStore(projectKey, model.key());
     }
 

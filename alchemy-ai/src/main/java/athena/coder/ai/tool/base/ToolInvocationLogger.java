@@ -67,7 +67,7 @@ public class ToolInvocationLogger implements ToolExecutor {
             Map.entry("addDependency", t("安装", "dependency", "依赖")),
             Map.entry("listDependencies", t("列出依赖", null, null)),
             Map.entry("securityAudit", t("安全检查", null, null)),
-            Map.entry("upgrade", t("升级", "dependency", "依赖")),
+            Map.entry("upgrade", t("升级", "packageName", "依赖")),
 
             // ── APITestClientTool ──
             Map.entry("sendRequest", t("请求", "url", "接口")),

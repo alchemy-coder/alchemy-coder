@@ -1,5 +1,6 @@
 package athena.coder.ai.tool.dependency;
 
+import athena.coder.ai.tool.base.ToolConstants;
 import athena.coder.ai.tool.base.ToolResult;
 import athena.coder.ai.util.ProjectTypeUtil;
 
@@ -22,7 +23,7 @@ public class PythonDependencyStrategy extends AbstractDependencyStrategy {
 
             List<String> command = List.of("pip", "install", fullPackage);
             String rawResult = factory.executeToolCommand(command, factory.getWorkDirectory(), timeout);
-            CommandResult result = factory.parseToCommandResult(rawResult);
+            ToolConstants.CommandResult result = factory.parseToCommandResult(rawResult);
 
             if (result.isSuccess()) {
                 Path reqFile = factory.getWorkDirectory().resolve("requirements.txt");
@@ -35,7 +36,7 @@ public class PythonDependencyStrategy extends AbstractDependencyStrategy {
                 return ToolResult.success(
                         String.format("已添加 Python 依赖: %s", fullPackage));
             } else {
-                return ToolResult.error("pip install 失败:\n" + result.error());
+                return ToolResult.error("pip install 失败:\n" + result.body());
             }
         } catch (Exception e) {
             return ToolResult.error("添加Python依赖失败", e);

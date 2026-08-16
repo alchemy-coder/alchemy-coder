@@ -1,6 +1,8 @@
 package athena.coder.ai.tool;
 
 import athena.coder.ai.tool.base.ProcessBasedTool;
+import athena.coder.ai.tool.base.ToolConstants;
+import athena.coder.ai.tool.util.CommandPathResolver;
 import athena.coder.ai.tool.validation.NotBlank;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -71,24 +73,19 @@ public class BasicTerminalTool extends ProcessBasedTool {
             sb.append(String.format("命令: %s\n", maskSensitiveInfo(command)));
             sb.append(String.format("耗时: %dms\n\n", durationMs));
 
-            if (rawOutput.startsWith(PREFIX_SUCCESS)) {
-                String stdout = stripPrefix(rawOutput);
+            ToolConstants.CommandResult result = ToolConstants.parseResult(rawOutput);
+            if (result.status() == ToolConstants.CommandStatus.SUCCESS) {
+                String stdout = result.body();
                 if (!stdout.isEmpty()) {
-                    sb.append("--- 标准输出 ---\n");
-                    sb.append(stdout);
-                    sb.append("\n");
+                    sb.append("--- 标准输出 ---\n").append(stdout).append("\n");
                 }
-            } else if (rawOutput.startsWith(PREFIX_ERROR)) {
-                String stderr = stripPrefix(rawOutput);
+            } else if (result.status() == ToolConstants.CommandStatus.ERROR) {
+                String stderr = result.body();
                 if (!stderr.isEmpty()) {
-                    sb.append("--- 错误输出 ---\n");
-                    sb.append(stderr);
-                    sb.append("\n");
+                    sb.append("--- 错误输出 ---\n").append(stderr).append("\n");
                 }
             } else {
-                sb.append("--- 输出 ---\n");
-                sb.append(rawOutput);
-                sb.append("\n");
+                sb.append("--- 输出 ---\n").append(rawOutput).append("\n");
             }
 
             return enforceOutputLimit(sb.toString());
@@ -100,45 +97,11 @@ public class BasicTerminalTool extends ProcessBasedTool {
             @P("要检查的命令名称") @NotBlank(fieldName = "命令名称") String commandName) {
 
         return executeWithAutoValidation(() -> {
-            Path workDir = getAllowedWorkDir();
-
-            String result = tryWhichCommand(commandName, workDir);
-            if (result != null) {
-                return result;
+            String path = CommandPathResolver.resolve(commandName);
+            if (path != null) {
+                return OK_PREFIX + String.format("命令 '%s' 可用: %s", commandName, path);
             }
-
-            if (IS_WINDOWS) {
-                result = tryWhereCommand(commandName, workDir);
-                if (result != null) {
-                    return result;
-                }
-            }
-
             return ERR_PREFIX + String.format("命令 '%s' 未找到或不可执行", commandName);
         }, "which", commandName);
-    }
-
-    private String tryWhichCommand(String commandName, Path workDir) {
-        try {
-            String result = executor.execute(List.of("which", commandName), workDir, 5000);
-            if (result.startsWith(PREFIX_SUCCESS)) {
-                return OK_PREFIX + String.format("命令 '%s' 可用: %s", commandName, stripPrefix(result).trim());
-            }
-        } catch (Exception e) {
-            logFine("which 命令检查失败: " + commandName);
-        }
-        return null;
-    }
-
-    private String tryWhereCommand(String commandName, Path workDir) {
-        try {
-            String result = executor.execute(List.of("where", commandName), workDir, 5000);
-            if (result.startsWith(PREFIX_SUCCESS)) {
-                return OK_PREFIX + String.format("命令 '%s' 可用:\n%s", commandName, stripPrefix(result).trim());
-            }
-        } catch (Exception e) {
-            logFine("where 命令检查失败: " + commandName);
-        }
-        return null;
     }
 }

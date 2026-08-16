@@ -8,17 +8,12 @@ import athena.coder.ai.assistant.agent.result.MarkdownStrippingDeserializer;
 /**
  * CODER 输出的结构化变更结果
  * <p>
- * 关键路由字段：status / changedFiles / compilationStatus
- * 其余字段用 JsonNode 保留完整数据，序列化回 JSON 时不丢失信息
+ * changedFiles 为落地文件清单，notes 为补充说明；WriterNode 仅消费这两个字段
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(using = MarkdownStrippingDeserializer.class)
 public record CoderResult(
-        String status,
-        JsonNode completedTasks,
-        JsonNode failedTasks,
         JsonNode changedFiles,
-        String compilationStatus,
         String notes
 ) {
     /**
