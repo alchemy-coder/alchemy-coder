@@ -3,6 +3,7 @@ package athena.coder.ai.workflow.node;
 import athena.coder.ai.assistant.agent.RouterAgent;
 import athena.coder.ai.assistant.agent.result.router.RouterResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
+import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.exception.RocAgentException;
 
@@ -25,7 +26,7 @@ public class RouterNode extends AbstractAgentNode {
         logStart(ctx, "开始路由");
         notifyModelCalling(state);
 
-        RouterAgent router = newChatAssistant(ctx.modelType(), RouterAgent.class);
+        RouterAgent router = newChatAssistant(ctx.modelType(), RouterAgent.class, AgentToolPolicy.ROUTER);
         AgentCall<RouterResult> call = request -> {
             RouterResult r = router.route(request, ctx.projectPath());
             if (r.workflowMode() == null) {

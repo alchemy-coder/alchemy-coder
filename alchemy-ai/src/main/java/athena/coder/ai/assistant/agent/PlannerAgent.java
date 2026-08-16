@@ -7,6 +7,8 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
+import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+
 /**
  * 规划师智能体 - PLANNER
  * <p>
@@ -17,13 +19,8 @@ import dev.langchain4j.service.V;
  */
 public interface PlannerAgent {
 
-    @SystemMessage("""
-            # Planner Agent - 首席规划师
-
-            **输出规则（最高优先级，违反即失败）：你的整个回复必须是纯JSON对象。
-            不允许任何前缀文字、解释、总结或Markdown代码块。
-            禁止在输出内容中使用任何 emoji 表情符号。**
-
+    @SystemMessage("# Planner Agent - 首席规划师\n\n"
+            + JSON_OUTPUT_RULE + """
             ## 身份与定位
             你是多Agent编排系统的首席架构师，将用户需求转化为精确的技术实施方案。
             你的输出直接决定下游 CODER/TESTER/REVIEWER 的工作质量。

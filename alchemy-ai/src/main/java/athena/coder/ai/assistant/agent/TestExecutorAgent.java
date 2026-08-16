@@ -45,6 +45,7 @@ public interface TestExecutorAgent {
                       @V("workDir") String workDir,
                       @V("projectType") String projectType,
                       @V("curDate") String curDate,
+                      @V("scenario") String scenario,
                       @V("changedFiles") String changedFiles,
                       @V("changedDiffRef") String changedDiffRef,
                       @V("acceptanceCriteria") String acceptanceCriteria);

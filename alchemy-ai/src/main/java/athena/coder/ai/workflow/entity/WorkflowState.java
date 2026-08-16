@@ -57,11 +57,6 @@ public class WorkflowState extends AgentState {
     public final static String ACCEPTANCE_CRITERIA = "acceptanceCriteria";
 
     /**
-     * 经用户确认的执行计划蓝图快照（由写角色节点落库，供审查/报告节点对齐需求）
-     */
-    public final static String PLAN_SNAPSHOT = "planSnapshot";
-
-    /**
      * DEBUGGER 输出的修复策略，供 CODER 在 Bug 修复流程中使用
      */
     public final static String FIX_STRATEGY = "fixStrategy";

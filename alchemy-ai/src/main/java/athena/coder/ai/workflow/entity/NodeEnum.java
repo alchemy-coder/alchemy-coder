@@ -17,12 +17,9 @@ public enum NodeEnum {
     REVIEWER,           // 审查员：代码规范、安全、需求对齐
 
     // 3. 收尾与异常
-    SUMMARIZER,
+    SUMMARIZER;
 
-    // 4. 子工作流（主图节点，确认后按 WORKFLOW_MODE 分流；枚举名与 WorkflowMode 同名，信号零映射）
-    CODE_WORKFLOW,      // 编码工作流
-    DEBUG_WORKFLOW,     // 缺陷修复工作流
-    WORD_WORKFLOW,      // 文档工作流
-    TEST_WORKFLOW;      // 测试补全工作流
+    // 子工作流节点名已统一改用 WorkflowMode.name()（见 MasterWorkflow），
+    // 消除「NodeEnum 与 WorkflowMode 两套枚举靠名字对齐」的脆弱约定。
 
 }

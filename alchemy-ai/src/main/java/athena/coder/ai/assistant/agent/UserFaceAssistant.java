@@ -6,15 +6,12 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
+import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+
 public interface UserFaceAssistant {
 
-    @SystemMessage("""
-            # 用户入口智能体
-            
-            **输出规则（最高优先级，违反即失败）：你的整个回复必须是纯JSON对象。
-            不允许任何前缀文字、解释、总结或Markdown代码块。
-            禁止在输出内容中使用任何 emoji 表情符号。**
-            
+    @SystemMessage("# 用户入口智能体\n\n"
+            + JSON_OUTPUT_RULE + """
             ## 身份定位
             你是多Agent系统的入口，对每条用户消息做三路分流。
             

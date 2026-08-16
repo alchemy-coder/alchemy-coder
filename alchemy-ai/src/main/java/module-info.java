@@ -29,8 +29,6 @@ module alchemy_ai {
     opens athena.coder.ai.assistant.agent.result.summarizer to com.fasterxml.jackson.databind, langchain4j, langchain4j.core;
 
     exports athena.coder.ai.assistant.agent;
-    exports athena.coder.ai.assistant.agent.code;
-    exports athena.coder.ai.assistant.agent.debug;
     exports athena.coder.ai.assistant.agent.result;
     exports athena.coder.ai.assistant.agent.result.coder;
     exports athena.coder.ai.assistant.agent.result.confirm;
@@ -41,8 +39,6 @@ module alchemy_ai {
     exports athena.coder.ai.assistant.agent.result.summarizer;
     exports athena.coder.ai.assistant.agent.result.tester;
     exports athena.coder.ai.assistant.agent.result.user;
-    exports athena.coder.ai.assistant.agent.test;
-    exports athena.coder.ai.assistant.agent.word;
     exports athena.coder.ai.assistant.model;
     exports athena.coder.ai.assistant.model.factory;
     exports athena.coder.ai.rag;
@@ -65,10 +61,6 @@ module alchemy_ai {
     exports athena.coder.ai.workflow.entity;
     exports athena.coder.ai.workflow.gate;
     exports athena.coder.ai.workflow.node;
-    exports athena.coder.ai.workflow.node.code;
-    exports athena.coder.ai.workflow.node.debug;
-    exports athena.coder.ai.workflow.node.test;
-    exports athena.coder.ai.workflow.node.word;
     exports athena.coder.ai.workflow.report;
     exports athena.coder.ai.workflow.workflow;
     exports athena.coder.entity;

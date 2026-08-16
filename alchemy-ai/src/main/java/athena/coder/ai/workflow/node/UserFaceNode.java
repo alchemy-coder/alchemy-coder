@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.UserFaceAssistant;
 import athena.coder.ai.assistant.agent.result.user.UserFaceMode;
 import athena.coder.ai.assistant.agent.result.user.UserFaceResult;
 import athena.coder.ai.rag.RagManager;
+import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.entity.chat.ChatEnum;
@@ -35,7 +36,7 @@ public class UserFaceNode extends AbstractAgentNode {
         // 每轮对话入口刷新索引：增量扫描无变更时零 API 开销，保证代码变更后 RAG 不长期滞后
         RagManager.getInstance().indexAsync(ctx.projectPath());
 
-        UserFaceAssistant assistant = newChatAssistant(ctx.modelType(), UserFaceAssistant.class);
+        UserFaceAssistant assistant = newChatAssistant(ctx.modelType(), UserFaceAssistant.class, AgentToolPolicy.USER_FACE);
         AgentCall<UserFaceResult> call = request -> assistant.chat(ctx.taskId(), request, ctx.projectPath());
 
         UserFaceResult result = callAgentWithRetry(

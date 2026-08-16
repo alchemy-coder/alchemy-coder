@@ -44,6 +44,7 @@ public interface FixAnalystAgent {
                            @V("projectType") String projectType,
                            @V("curDate") String curDate,
                            @V("sessionId") String sessionId,
+                           @V("scenario") String scenario,
                            @V("testResult") String testResult,
                            @V("changedFiles") String changedFiles,
                            @V("changedDiffRef") String changedDiffRef,

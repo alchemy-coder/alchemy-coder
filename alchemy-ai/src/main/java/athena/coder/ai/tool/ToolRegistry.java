@@ -66,8 +66,7 @@ public class ToolRegistry {
         return Holder.INSTANCE;
     }
 
-    public static Map<ToolSpecification, ToolExecutor> getToolsForAgent(Class<?> agentClass) {
-        AgentToolPolicy policy = AgentToolPolicy.fromAgentClass(agentClass);
+    public static Map<ToolSpecification, ToolExecutor> getToolsForAgent(AgentToolPolicy policy) {
         return getInstance().getToolMapByCategory(policy.categories());
     }
 

@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.ConfirmIntentAgent;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntent;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntentResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
+import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.gate.HumanGate;
 import athena.coder.entity.chat.ChatEnum;
@@ -108,7 +109,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
      */
     private ConfirmIntentResult classifyReply(WorkflowState state, NodeContext ctx, String reply) throws Exception {
         notifyModelCalling(state);
-        ConfirmIntentAgent agent = newChatAssistant(ctx.modelType(), ConfirmIntentAgent.class);
+        ConfirmIntentAgent agent = newChatAssistant(ctx.modelType(), ConfirmIntentAgent.class, AgentToolPolicy.CONFIRM_INTENT);
         String planSummary = requireUpstream(state.getStringValue(PLAN), "PLAN 缺失，无法进行确认意图判定");
         AgentCall<ConfirmIntentResult> call = request -> {
             ConfirmIntentResult r = agent.classify(request, planSummary);

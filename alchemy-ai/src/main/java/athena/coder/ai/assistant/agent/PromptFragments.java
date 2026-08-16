@@ -105,7 +105,7 @@ public final class PromptFragments {
 
     // ===== 证据块（追加在 @UserMessage 模板末尾，{{xxx}} 与 @V 参数一一对应）=====
 
-    /** 审查证据（含测试证据，编码/测试补全审查用） */
+    /** 审查证据（无测试证据的场景将 testResult 传空串，以内容核对为主） */
     public static final String REVIEW_EVIDENCE = """
 
 
@@ -118,21 +118,6 @@ public final class PromptFragments {
 
             ### 测试结果
             {{testResult}}
-
-            ### 验收标准
-            {{acceptanceCriteria}}
-            """;
-
-    /** 审查证据（无测试环节，文档审查用） */
-    public static final String REVIEW_EVIDENCE_DOC = """
-
-
-            ## 审查证据
-            ### 需求/计划快照
-            {{originalRequirement}}
-
-            ### 变更摘要
-            {{changeSummary}}
 
             ### 验收标准
             {{acceptanceCriteria}}
@@ -174,54 +159,4 @@ public final class PromptFragments {
             {{previousFixes}}
             """;
 
-    /** 报告依据（编码/测试补全） */
-    public static final String REPORT_EVIDENCE = """
-
-
-            ## 报告依据
-            ### 需求/计划快照
-            {{originalRequirement}}
-
-            ### 变更摘要
-            {{changeSummary}}
-
-            ### 测试结果
-            {{testResult}}
-
-            ### 审查结论
-            {{reviewResult}}
-            """;
-
-    /** 报告依据（缺陷修复，含修复策略） */
-    public static final String REPORT_EVIDENCE_FIX = """
-
-
-            ## 报告依据
-            ### 需求/计划快照
-            {{originalRequirement}}
-
-            ### 变更摘要
-            {{changeSummary}}
-
-            ### 修复策略
-            {{fixStrategy}}
-
-            ### 测试结果
-            {{testResult}}
-            """;
-
-    /** 报告依据（文档，无测试环节） */
-    public static final String REPORT_EVIDENCE_DOC = """
-
-
-            ## 报告依据
-            ### 需求/计划快照
-            {{originalRequirement}}
-
-            ### 变更摘要
-            {{changeSummary}}
-
-            ### 审查结论
-            {{reviewResult}}
-            """;
 }

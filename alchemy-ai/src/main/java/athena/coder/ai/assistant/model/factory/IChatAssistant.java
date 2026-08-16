@@ -7,6 +7,7 @@ import athena.coder.ai.rag.EmbeddingModels;
 import athena.coder.ai.rag.SqliteEmbeddingStore;
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.tool.ToolRegistry;
+import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.entity.model.EmbeddingModelEnum;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.segment.TextSegment;
@@ -26,18 +27,19 @@ import java.util.Map;
 
 public interface IChatAssistant {
 
-    <T> T getChatAssistant(String apiKey, Class<T> agentClass);
+    <T> T getChatAssistant(String apiKey, Class<T> agentClass, AgentToolPolicy policy);
 
     /**
-     * 获取智能体实例 - 通过 ToolRegistry 获取对应 Agent 的工具集
+     * 获取智能体实例 - 通过 ToolRegistry 按「角色策略」获取工具集
      *
      * @param agentClass 智能体接口的 Class 对象
      * @param model      ChatModel 实例
+     * @param policy     角色工具策略（工具权限由 Node 显式声明，不再按类名查表）
      * @param <T>        智能体接口类型
      * @return 配置好的智能体实例
      */
-    default <T> T getAssistant(Class<T> agentClass, ChatModel model) {
-        Map<ToolSpecification, ToolExecutor> tools = ToolRegistry.getToolsForAgent(agentClass);
+    default <T> T getAssistant(Class<T> agentClass, ChatModel model, AgentToolPolicy policy) {
+        Map<ToolSpecification, ToolExecutor> tools = ToolRegistry.getToolsForAgent(policy);
 
         AiServices<T> builder = AiServices.builder(agentClass)
                 .chatModel(model)

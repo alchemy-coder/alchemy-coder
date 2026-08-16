@@ -3,6 +3,7 @@ package athena.coder.ai.workflow.node;
 import athena.coder.ai.assistant.agent.PlannerAgent;
 import athena.coder.ai.assistant.agent.result.planner.PlanResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
+import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -34,7 +35,7 @@ public class PlanNode extends AbstractAgentNode {
         notifyModelCalling(state);
         logStart(ctx, "开始规划", "message", truncate(userMessage, 100));
 
-        PlannerAgent assistant = newChatAssistant(ctx.modelType(), PlannerAgent.class);
+        PlannerAgent assistant = newChatAssistant(ctx.modelType(), PlannerAgent.class, AgentToolPolicy.PLANNER);
         AgentCall<PlanResult> call = request -> {
             PlanResult r = assistant.plan(ctx.taskId(), request, ctx.projectPath(), ctx.projectType(), workflowMode);
             // 在 AgentCall 内部校验完整性：普通 Exception 触发 callAgentWithRetry 重试

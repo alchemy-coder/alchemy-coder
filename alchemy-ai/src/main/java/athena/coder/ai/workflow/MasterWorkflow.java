@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow;
 
+import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.node.PlanConfirmNode;
@@ -19,14 +20,10 @@ import org.bsc.langgraph4j.StateGraph;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static athena.coder.ai.workflow.entity.NodeEnum.CODE_WORKFLOW;
-import static athena.coder.ai.workflow.entity.NodeEnum.DEBUG_WORKFLOW;
 import static athena.coder.ai.workflow.entity.NodeEnum.PLANNER;
 import static athena.coder.ai.workflow.entity.NodeEnum.PLAN_CONFIRM;
 import static athena.coder.ai.workflow.entity.NodeEnum.ROUTER;
-import static athena.coder.ai.workflow.entity.NodeEnum.TEST_WORKFLOW;
 import static athena.coder.ai.workflow.entity.NodeEnum.USER_FACE;
-import static athena.coder.ai.workflow.entity.NodeEnum.WORD_WORKFLOW;
 import static athena.coder.ai.workflow.workflow.AbstractSubWorkflow.routeBySignal;
 import static athena.coder.ai.workflow.workflow.AbstractSubWorkflow.selfTargets;
 
@@ -47,11 +44,12 @@ public class MasterWorkflow {
         g.node(PLANNER, new PlanNode());
         g.node(PLAN_CONFIRM, new PlanConfirmNode());
 
-        //子工作流节点（实现 NodeAction，内嵌主图；各自内部跑完整质量闭环）
-        g.node(CODE_WORKFLOW, new CoderWorkflow());
-        g.node(DEBUG_WORKFLOW, new DebuggerWorkflow());
-        g.node(WORD_WORKFLOW, new WordWorkflow());
-        g.node(TEST_WORKFLOW, new TesterWorkflow());
+        //子工作流节点（实现 NodeAction，内嵌主图；各自内部跑完整质量闭环）；
+        //节点名直接用 WorkflowMode.name()，与 PLAN_CONFIRM 的零映射信号天然对齐
+        g.node(WorkflowMode.CODE_WORKFLOW, new CoderWorkflow());
+        g.node(WorkflowMode.DEBUG_WORKFLOW, new DebuggerWorkflow());
+        g.node(WorkflowMode.WORD_WORKFLOW, new WordWorkflow());
+        g.node(WorkflowMode.TEST_WORKFLOW, new TesterWorkflow());
 
         g.fromStart(USER_FACE);
         g.edge(ROUTER, PLANNER);
@@ -62,13 +60,14 @@ public class MasterWorkflow {
 
         //人工确认门：拒绝 → PLANNER 重新规划；确认 → 按 WORKFLOW_MODE 分流到对应子工作流节点；熔断/异常 → END
         g.route(PLAN_CONFIRM, routeBySignal(),
-                selfTargets(PLANNER, CODE_WORKFLOW, DEBUG_WORKFLOW, WORD_WORKFLOW, TEST_WORKFLOW));
+                selfTargets(PLANNER, WorkflowMode.CODE_WORKFLOW, WorkflowMode.DEBUG_WORKFLOW,
+                        WorkflowMode.WORD_WORKFLOW, WorkflowMode.TEST_WORKFLOW));
 
         //子工作流执行完毕 → END（最终报告由子工作流基类 collectResults 输出）
-        g.toEnd(CODE_WORKFLOW);
-        g.toEnd(DEBUG_WORKFLOW);
-        g.toEnd(WORD_WORKFLOW);
-        g.toEnd(TEST_WORKFLOW);
+        g.toEnd(WorkflowMode.CODE_WORKFLOW);
+        g.toEnd(WorkflowMode.DEBUG_WORKFLOW);
+        g.toEnd(WorkflowMode.WORD_WORKFLOW);
+        g.toEnd(WorkflowMode.TEST_WORKFLOW);
 
         CompiledGraph<WorkflowState> compiledGraph = g.compile();
         long startMs = System.currentTimeMillis();

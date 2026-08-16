@@ -1,6 +1,7 @@
 package athena.coder.ai.assistant.model;
 
 import athena.coder.ai.assistant.model.factory.IChatAssistant;
+import athena.coder.ai.tool.config.AgentToolPolicy;
 import dev.langchain4j.model.chat.ChatModel;
 
 import java.util.function.Function;
@@ -20,8 +21,8 @@ public class DefaultChatAssistant implements IChatAssistant {
     }
 
     @Override
-    public <T> T getChatAssistant(String apiKey, Class<T> agentClass) {
+    public <T> T getChatAssistant(String apiKey, Class<T> agentClass, AgentToolPolicy policy) {
         ChatModel model = modelFactory.apply(apiKey);
-        return getAssistant(agentClass, model);
+        return getAssistant(agentClass, model, policy);
     }
 }

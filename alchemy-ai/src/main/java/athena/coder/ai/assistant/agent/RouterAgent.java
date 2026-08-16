@@ -5,6 +5,8 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
+import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+
 /**
  * 路由匹配器 - ROUTER
  * <p>
@@ -14,10 +16,9 @@ import dev.langchain4j.service.V;
  */
 public interface RouterAgent {
 
-    @SystemMessage("""
-            **输出规则（最高优先级）：只输出下方 JSON，将 workflowMode 替换为四个枚举值之一。禁止使用任何 emoji 表情符号。**
+    @SystemMessage(JSON_OUTPUT_RULE + """
             {"workflowMode": "CODE|DEBUG|WORD|TEST"}
-            
+
             你是路由调度器，根据用户消息语义选择工作流：
             CODE  — 写代码、新增功能、重构结构
             DEBUG — 修bug、排查异常、安全漏洞、性能问题
