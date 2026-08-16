@@ -115,10 +115,6 @@ public class ReportNode extends AbstractAgentNode {
      * 验证报告结果的完整性（检查关键字段是否存在）
      */
     private void validateSummarizeResult(SummarizerResult result) {
-        if (result.error() != null) {
-            ErrorLogger.warn(getClass().getSimpleName(), "报告结果包含错误标记: " + result.error());
-            return;
-        }
         if (result.report() == null || result.report().path("title").isMissingNode()) {
             ErrorLogger.warn(getClass().getSimpleName(), "报告结果缺少关键字段: /report/title");
         }

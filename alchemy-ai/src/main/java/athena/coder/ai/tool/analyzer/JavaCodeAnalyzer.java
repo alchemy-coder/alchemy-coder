@@ -9,25 +9,8 @@ import java.util.regex.Matcher;
 
 public class JavaCodeAnalyzer extends AbstractCodeAnalyzer {
 
-    private final PatternRegistry patternRegistry;
-
-    public JavaCodeAnalyzer(PatternRegistry patternRegistry) {
-        this.patternRegistry = patternRegistry;
-    }
-
-    @Override
-    protected String getAnalyzerName() {
-        return "Java";
-    }
-
-    @Override
-    public String supportedExtension() {
-        return ".java";
-    }
-
-    @Override
-    public String supportedLanguage() {
-        return "Java";
+    public JavaCodeAnalyzer() {
+        super("Java", ".java");
     }
 
     @Override
@@ -52,7 +35,7 @@ public class JavaCodeAnalyzer extends AbstractCodeAnalyzer {
                 problems.add(new CodeProblem(lineNum, "WARNING", "避免使用 printStackTrace()，建议使用日志框架记录异常"));
             }
 
-            Matcher importMatcher = patternRegistry.importStatement().matcher(line);
+            Matcher importMatcher = PatternRegistry.getInstance().importStatement().matcher(line);
             if (importMatcher.find()) {
                 importedClasses.add(importMatcher.group(1));
             }

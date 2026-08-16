@@ -4,7 +4,6 @@ import athena.coder.ai.spi.ErrorLogger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,10 +12,17 @@ public abstract class AbstractCodeAnalyzer implements CodeAnalyzer {
     private static final Pattern TODO_REGEX = Pattern.compile(
             "TODO|FIXME|HACK|XXX|OPTIMIZE|BUG|WORKAROUND", Pattern.CASE_INSENSITIVE);
 
-    protected abstract String getAnalyzerName();
+    private final String analyzerName;
+    private final String extension;
 
-    protected Logger getLogger() {
-        return Logger.getLogger(getClass().getName());
+    protected AbstractCodeAnalyzer(String analyzerName, String extension) {
+        this.analyzerName = analyzerName;
+        this.extension = extension;
+    }
+
+    @Override
+    public String supportedExtension() {
+        return extension;
     }
 
     @Override
@@ -25,7 +31,7 @@ public abstract class AbstractCodeAnalyzer implements CodeAnalyzer {
         try {
             doAnalyze(lines, problems);
         } catch (Exception e) {
-            ErrorLogger.warn(getAnalyzerName(), "代码分析异常: " + e.getMessage());
+            ErrorLogger.warn(analyzerName, "代码分析异常: " + e.getMessage());
         }
         return problems;
     }
@@ -42,6 +48,29 @@ public abstract class AbstractCodeAnalyzer implements CodeAnalyzer {
             if (matcher.find()) {
                 problems.add(new CodeProblem(i + 1, "INFO", "存在待处理标记: " + line));
             }
+        }
+    }
+
+    /** JS/TS 共享：console 输出检测 */
+    protected static void checkConsoleOutput(String line, int lineNum, List<CodeProblem> problems) {
+        if (line.contains("console.log(") || line.contains("console.warn(") || line.contains("console.error(")) {
+            problems.add(new CodeProblem(lineNum, "INFO", "生产代码应使用日志库替代 console 输出"));
+        }
+    }
+
+    /** JS/TS 共享：空 catch 块检测（nextLine 为下一行，越界时传空串） */
+    protected static void checkEmptyCatch(String line, String nextLine, int lineNum, List<CodeProblem> problems) {
+        if (line.startsWith("catch") && (line.endsWith("{") || line.endsWith("() {"))) {
+            if (nextLine.equals("}")) {
+                problems.add(new CodeProblem(lineNum, "WARNING", "空的 catch 块，应处理或记录错误"));
+            }
+        }
+    }
+
+    /** JS/TS 共享：eval() 检测 */
+    protected static void checkEvalUsage(String line, int lineNum, List<CodeProblem> problems) {
+        if (line.contains("eval(") && !line.startsWith("//")) {
+            problems.add(new CodeProblem(lineNum, "WARNING", "eval() 存在安全风险，避免使用"));
         }
     }
 }

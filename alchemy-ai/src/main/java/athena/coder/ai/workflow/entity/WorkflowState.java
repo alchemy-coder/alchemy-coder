@@ -44,11 +44,6 @@ public class WorkflowState extends AgentState {
     public final static String CHANGED_DIFF_REF = "changedDiffRef";
 
     /**
-     * CODER 生成的 AI commit ID，用于回滚
-     */
-    public final static String AI_COMMIT = "aiCommit";
-
-    /**
      * 验收标准摘要（精简版），来自 PLANNER 的执行计划提取，供 TESTER 验证测试覆盖度
      * 格式：每个任务的关键验收点列表，如：
      * - 任务1: 用户注册成功返回非空 userId

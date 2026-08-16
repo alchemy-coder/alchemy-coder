@@ -106,7 +106,6 @@ public class WriterNode extends AbstractAgentNode {
         return Map.of(
                 CHANGED_FILES, changedFiles,
                 CHANGED_DIFF_REF, isolation.diffRef(),
-                AI_COMMIT, isolation.aiCommit(),
                 ORIGINAL_REQUIREMENT, plan != null ? plan : "",
                 ACCEPTANCE_CRITERIA, acceptanceCriteria != null ? acceptanceCriteria : ""
         );

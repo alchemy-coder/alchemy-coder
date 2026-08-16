@@ -24,7 +24,7 @@ public final class PatternRegistry {
 
     public Pattern javaClassDeclaration() {
         return getOrCreate("javaClass",
-                "(?:public\\s+)?(?:abstract\\s+)?(?:final\\s+)(class|interface|enum)\\s+(\\w+)(?:\\s+extends\\s+(\\w+))?(?:\\s+implements\\s+([\\w,\\s]+))?");
+                "(?:public\\s+)?(?:abstract\\s+)?(?:final\\s+)?(class|interface|enum)\\s+(\\w+)(?:\\s+extends\\s+(\\w+))?(?:\\s+implements\\s+([\\w,\\s]+))?");
     }
 
     public Pattern logLevel() {

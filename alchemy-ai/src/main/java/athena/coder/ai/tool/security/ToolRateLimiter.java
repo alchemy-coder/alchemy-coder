@@ -6,28 +6,26 @@ import athena.coder.ai.tool.exception.ErrorCode;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
+/**
+ * 滑动窗口限流：按工具名 + 全局两类窗口计数。
+ * 读/写/破坏性操作曾分目录限流，但写/破坏性路径无调用方，已收敛为单一调用频率。
+ */
 public class ToolRateLimiter {
-
-    private static final Logger LOG = Logger.getLogger(ToolRateLimiter.class.getName());
 
     private final ToolConfigCenter config;
     private final ConcurrentHashMap<String, SlidingWindowCounter> toolCounters = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, SlidingWindowCounter> categoryCounters = new ConcurrentHashMap<>();
+    private final SlidingWindowCounter globalCounter;
 
     public ToolRateLimiter(ToolConfigCenter config) {
         this.config = config;
+        this.globalCounter = new SlidingWindowCounter(60, config.getRateLimitPerMinute() * 2);
     }
 
     public void checkRateLimit(String toolName) throws ToolSecurityException {
-        checkRateLimit(toolName, OperationCategory.READ);
-    }
-
-    public void checkRateLimit(String toolName, OperationCategory category) throws ToolSecurityException {
         if (!config.isRateLimitEnabled()) return;
 
-        int toolLimit = getToolLimit(toolName, category);
+        int toolLimit = config.getRateLimitPerMinute();
         if (toolLimit > 0) {
             SlidingWindowCounter toolCounter = toolCounters.computeIfAbsent(
                     toolName,
@@ -38,38 +36,9 @@ public class ToolRateLimiter {
             }
         }
 
-        int categoryLimit = getCategoryLimit(category);
-        if (categoryLimit > 0) {
-            String categoryKey = category.name();
-            SlidingWindowCounter catCounter = categoryCounters.computeIfAbsent(
-                    categoryKey,
-                    k -> new SlidingWindowCounter(60, categoryLimit)
-            );
-            if (!catCounter.tryAcquire()) {
-                throw new ToolSecurityException(toolName, ErrorCode.RATE_LIMIT_EXCEEDED, categoryLimit);
-            }
+        if (!globalCounter.tryAcquire()) {
+            throw new ToolSecurityException(toolName, ErrorCode.RATE_LIMIT_EXCEEDED, config.getRateLimitPerMinute() * 2);
         }
-    }
-
-    private int getToolLimit(String toolName, OperationCategory category) {
-        return switch (category) {
-            case WRITE, DESTRUCTIVE -> config.getRateLimitPerMinute() / 2;
-            case READ -> config.getRateLimitPerMinute();
-        };
-    }
-
-    private int getCategoryLimit(OperationCategory category) {
-        return switch (category) {
-            case WRITE -> config.getRateLimitPerMinute() / 2;
-            case DESTRUCTIVE -> config.getRateLimitPerMinute() / 4;
-            case READ -> config.getRateLimitPerMinute() * 2;
-        };
-    }
-
-    public enum OperationCategory {
-        READ,
-        WRITE,
-        DESTRUCTIVE
     }
 
     private static class SlidingWindowCounter {

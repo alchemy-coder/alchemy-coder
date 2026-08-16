@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.workflow;
 
+import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.workflow.node.AnalystNode;
 import athena.coder.ai.workflow.node.ReportNode;
 import athena.coder.ai.workflow.node.ReviewNode;
@@ -18,7 +19,7 @@ public class TesterWorkflow extends AbstractSubWorkflow {
 
     @Override
     protected String workflowName() {
-        return "测试补全工作流";
+        return WorkflowMode.TEST_WORKFLOW.label();
     }
 
     @Override

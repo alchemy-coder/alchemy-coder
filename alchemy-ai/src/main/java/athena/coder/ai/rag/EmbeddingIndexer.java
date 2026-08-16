@@ -48,7 +48,7 @@ final class EmbeddingIndexer {
         Map<String, FileSnapshot> snapshots = AiInfra.embeddings().loadSnapshots(projectKey, modelKey);
 
         // 1. 清理已删除文件
-        cleanupDeletedFiles(projectKey, modelKey, store, scanned, snapshots);
+        cleanupDeletedFiles(projectKey, modelKey, scanned, snapshots);
 
         // 2. 筛选新增/变更文件
         List<FileSnapshot> changed = filterChangedFiles(scanned, snapshots);
@@ -119,13 +119,13 @@ final class EmbeddingIndexer {
     /**
      * 清理已删除文件：软删 chunk 向量 + FTS 索引，物理删文件指纹
      */
-    private static void cleanupDeletedFiles(String projectKey, String modelKey, SqliteEmbeddingStore store,
+    private static void cleanupDeletedFiles(String projectKey, String modelKey,
                                             List<FileSnapshot> scanned, Map<String, FileSnapshot> snapshots) {
         Set<String> currentPaths = new HashSet<>();
         scanned.forEach(f -> currentPaths.add(f.filePath()));
         for (FileSnapshot snapshot : snapshots.values()) {
             if (!currentPaths.contains(snapshot.filePath())) {
-                AiInfra.embeddings().deleteByFile(projectKey, store.getModel(), snapshot.filePath());
+                AiInfra.embeddings().deleteByFile(projectKey, modelKey, snapshot.filePath());
                 AiInfra.embeddings().deleteSnapshot(projectKey, modelKey, snapshot.filePath());
             }
         }

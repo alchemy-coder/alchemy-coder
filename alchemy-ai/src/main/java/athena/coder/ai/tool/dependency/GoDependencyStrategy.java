@@ -9,38 +9,17 @@ import java.util.List;
 public class GoDependencyStrategy extends AbstractDependencyStrategy {
 
     public GoDependencyStrategy(DependencyStrategyFactory factory) {
-        super(factory, DEFAULT_TIMEOUT);
-    }
-
-    @Override
-    protected String getStrategyName() {
-        return "GO";
-    }
-
-    @Override
-    public String getProjectType() {
-        return ProjectTypeUtil.GO;
+        super(factory, DEFAULT_TIMEOUT, ProjectTypeUtil.GO);
     }
 
     @Override
     public ToolResult addDependency(Dependency dep) {
-        try {
-            String fullModule = dep.getArtifactId() +
-                    (dep.getVersion() != null && !dep.getVersion().isBlank() ? "@" + dep.getVersion() : "");
-
-            List<String> command = List.of("go", "get", fullModule);
-            String rawResult = factory.executeToolCommand(command, factory.getWorkDirectory(), timeout);
-            CommandResult result = factory.parseToCommandResult(rawResult);
-
-            if (result.isSuccess()) {
-                return ToolResult.success(
-                        String.format("已添加 Go 依赖: %s", fullModule));
-            } else {
-                return ToolResult.error("go get 失败:\n" + result.error());
-            }
-        } catch (Exception e) {
-            return ToolResult.error("添加Go依赖失败", e);
-        }
+        String fullModule = dep.getArtifactId() +
+                (dep.getVersion() != null && !dep.getVersion().isBlank() ? "@" + dep.getVersion() : "");
+        return runInstallCommand(
+                List.of("go", "get", fullModule),
+                String.format("已添加 Go 依赖: %s", fullModule),
+                "go get");
     }
 
     @Override

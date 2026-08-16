@@ -2,7 +2,9 @@ package athena.coder.ai.workflow.report;
 
 import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.tool.util.GitHelper;
+import athena.coder.ai.workflow.entity.ReviewVerdict;
 import athena.coder.ai.workflow.entity.WorkflowState;
+import athena.coder.exception.RocAgentException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -209,12 +211,17 @@ public final class ReportFormatter {
     }
 
     private static String formatVerdict(String verdict) {
-        return switch (verdict.toUpperCase()) {
-            case "APPROVED" -> "✅ 通过";
-            case "APPROVED_WITH_NOTES" -> "✅ 通过（有建议）";
-            case "REQUEST_CHANGES" -> "🔄 打回修改";
-            case "BLOCKED" -> "🚫 阻塞";
-            default -> verdict;
+        ReviewVerdict v;
+        try {
+            v = ReviewVerdict.from(verdict);
+        } catch (RocAgentException e) {
+            return verdict;
+        }
+        return switch (v) {
+            case APPROVED -> "✅ 通过";
+            case APPROVED_WITH_NOTES -> "✅ 通过（有建议）";
+            case REQUEST_CHANGES -> "🔄 打回修改";
+            case BLOCKED -> "🚫 阻塞";
         };
     }
 }

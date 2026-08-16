@@ -4,19 +4,8 @@ import java.util.List;
 
 public class PythonCodeAnalyzer extends AbstractCodeAnalyzer {
 
-    @Override
-    protected String getAnalyzerName() {
-        return "Python";
-    }
-
-    @Override
-    public String supportedExtension() {
-        return ".py";
-    }
-
-    @Override
-    public String supportedLanguage() {
-        return "Python";
+    public PythonCodeAnalyzer() {
+        super("Python", ".py");
     }
 
     @Override

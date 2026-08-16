@@ -8,6 +8,7 @@ import dev.langchain4j.service.V;
 
 import static athena.coder.ai.assistant.agent.PromptFragments.ENV_LINE;
 import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+import static athena.coder.ai.assistant.agent.PromptFragments.REPORT_EVIDENCE;
 import static athena.coder.ai.assistant.agent.PromptFragments.REPORT_SCHEMA;
 
 /**
@@ -33,26 +34,7 @@ public interface ReportAgent {
             3. **规范输出** - Commit Message 遵循 Conventional Commits 规范
             """)
     SummarizerResult report(@MemoryId long memoryId,
-                            @UserMessage("""
-                                    {{summarizeRequest}}
-
-
-                                    ## 报告依据
-                                    ### 需求/计划快照
-                                    {{originalRequirement}}
-
-                                    ### 变更摘要
-                                    {{changeSummary}}
-
-                                    ### 修复策略
-                                    {{fixStrategy}}
-
-                                    ### 测试结果
-                                    {{testResult}}
-
-                                    ### 审查结论
-                                    {{reviewResult}}
-                                    """)
+                            @UserMessage("{{summarizeRequest}}" + REPORT_EVIDENCE)
                             @V("summarizeRequest") String summarizeRequest,
                             @V("workDir") String workDir,
                             @V("curDate") String curDate,

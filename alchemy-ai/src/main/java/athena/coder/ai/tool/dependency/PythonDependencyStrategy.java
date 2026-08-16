@@ -11,17 +11,7 @@ import java.util.List;
 public class PythonDependencyStrategy extends AbstractDependencyStrategy {
 
     public PythonDependencyStrategy(DependencyStrategyFactory factory) {
-        super(factory, DEFAULT_TIMEOUT);
-    }
-
-    @Override
-    protected String getStrategyName() {
-        return "PYTHON";
-    }
-
-    @Override
-    public String getProjectType() {
-        return ProjectTypeUtil.PYTHON;
+        super(factory, DEFAULT_TIMEOUT, ProjectTypeUtil.PYTHON);
     }
 
     @Override

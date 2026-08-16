@@ -4,19 +4,8 @@ import java.util.List;
 
 public class RustCodeAnalyzer extends AbstractCodeAnalyzer {
 
-    @Override
-    protected String getAnalyzerName() {
-        return "Rust";
-    }
-
-    @Override
-    public String supportedExtension() {
-        return ".rs";
-    }
-
-    @Override
-    public String supportedLanguage() {
-        return "Rust";
+    public RustCodeAnalyzer() {
+        super("Rust", ".rs");
     }
 
     @Override

@@ -2,6 +2,8 @@ package athena.coder.ai.assistant.agent.result.coder;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import athena.coder.ai.assistant.agent.result.MarkdownStrippingDeserializer;
 
 /**
  * CODER 输出的结构化变更结果
@@ -10,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * 其余字段用 JsonNode 保留完整数据，序列化回 JSON 时不丢失信息
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonDeserialize(using = MarkdownStrippingDeserializer.class)
 public record CoderResult(
         String status,
         JsonNode completedTasks,

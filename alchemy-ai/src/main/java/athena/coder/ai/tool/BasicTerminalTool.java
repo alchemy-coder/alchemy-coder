@@ -43,8 +43,7 @@ public class BasicTerminalTool extends ProcessBasedTool {
             Path workDir = getAllowedWorkDir();
             List<String> cmdList = buildCommandList(command.trim());
 
-            String rawResult = executor.execute(cmdList, workDir, getMyTimeout());
-            String result = processResult(rawResult);
+            String result = executeCommand(cmdList, workDir, getMyTimeout());
 
             if (result.startsWith(OK_PREFIX)) {
                 logInfo(String.format("命令执行成功: %s", maskSensitiveInfo(command)));
@@ -61,6 +60,7 @@ public class BasicTerminalTool extends ProcessBasedTool {
         return executeWithAutoValidation(() -> {
             Path workDir = getAllowedWorkDir();
             List<String> cmdList = buildCommandList(command.trim());
+            validateCommandSafety(cmdList);
 
             long startTime = System.currentTimeMillis();
             String rawOutput = executor.execute(cmdList, workDir, getMyTimeout());

@@ -33,28 +33,4 @@ public final class MarkdownUtils {
         }
         return trimmed;
     }
-
-    /**
-     * 当 stripMarkdown 无法剥离（如前面有自然语言前缀）时的降级提取：
-     * 用 find() 查找代码块，提取以 { 开头的内容
-     *
-     * @return 提取到的 JSON 字符串；无法提取时返回 null
-     */
-    public static String extractJson(String raw) {
-        if (raw == null) return null;
-        Matcher m = MARKDOWN_PATTERN.matcher(raw);
-        while (m.find()) {
-            String content = m.group(1).trim();
-            if (content.startsWith("{")) {
-                return content;
-            }
-        }
-        // 没有 markdown 围栏：尝试从文本中找第一个 { 到最后一个 }
-        int start = raw.indexOf('{');
-        int end = raw.lastIndexOf('}');
-        if (start >= 0 && end > start) {
-            return raw.substring(start, end + 1).trim();
-        }
-        return null;
-    }
 }

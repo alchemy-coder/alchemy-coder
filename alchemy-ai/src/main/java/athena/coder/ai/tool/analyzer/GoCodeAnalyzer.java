@@ -4,25 +4,12 @@ import java.util.List;
 
 public class GoCodeAnalyzer extends AbstractCodeAnalyzer {
 
-    @Override
-    protected String getAnalyzerName() {
-        return "Go";
-    }
-
-    @Override
-    public String supportedExtension() {
-        return ".go";
-    }
-
-    @Override
-    public String supportedLanguage() {
-        return "Go";
+    public GoCodeAnalyzer() {
+        super("Go", ".go");
     }
 
     @Override
     protected void doAnalyze(List<String> lines, List<CodeProblem> problems) {
-        boolean inImportBlock = false;
-
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).trim();
             int lineNum = i + 1;
@@ -37,13 +24,6 @@ public class GoCodeAnalyzer extends AbstractCodeAnalyzer {
 
             if (line.contains("log.Fatal") || line.contains("os.Exit")) {
                 problems.add(new CodeProblem(lineNum, "WARNING", "库代码中避免使用 log.Fatal/os.Exit，应由调用方决定"));
-            }
-
-            if (line.startsWith("import (")) {
-                inImportBlock = true;
-            }
-            if (inImportBlock && line.equals(")")) {
-                inImportBlock = false;
             }
 
             if (line.contains("fmt.Print") && !line.startsWith("//")) {

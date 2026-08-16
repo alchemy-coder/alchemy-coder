@@ -6,11 +6,8 @@ import athena.coder.ai.tool.exception.ToolSecurityException;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.logging.Logger;
 
 public final class CommandSafetyValidator {
-
-    private static final Logger LOG = Logger.getLogger(CommandSafetyValidator.class.getName());
 
     private static final Set<String> BLOCKED_COMMANDS = Set.of(
             "rm", "mkfs", "dd", "chmod", "chown", "sudo", "su", "reboot",

@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.workflow;
 
+import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.workflow.node.AnalystNode;
 import athena.coder.ai.workflow.node.ReportNode;
 import athena.coder.ai.workflow.node.ReviewNode;
@@ -23,7 +24,7 @@ public class CoderWorkflow extends AbstractSubWorkflow {
 
     @Override
     protected String workflowName() {
-        return "编码工作流";
+        return WorkflowMode.CODE_WORKFLOW.label();
     }
 
     @Override

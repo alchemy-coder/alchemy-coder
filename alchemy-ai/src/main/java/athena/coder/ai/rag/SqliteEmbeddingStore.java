@@ -160,6 +160,8 @@ public class SqliteEmbeddingStore implements EmbeddingStore<TextSegment> {
     @Override
     public void removeAll() {
         AiInfra.embeddings().deleteByProject(projectKey, model);
+        AiInfra.embeddings().loadSnapshots(projectKey, model).keySet()
+                .forEach(path -> AiInfra.embeddings().deleteSnapshot(projectKey, model, path));
     }
 
     public String getModel() {

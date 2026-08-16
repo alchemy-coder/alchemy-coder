@@ -11,8 +11,4 @@ public @interface FilePath {
     boolean mustExist() default true;
 
     boolean allowBinary() default false;
-
-    boolean allowDirectory() default true;
-
-    long maxSizeBytes() default -1L;
 }

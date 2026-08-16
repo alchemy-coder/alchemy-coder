@@ -3,7 +3,6 @@ package athena.coder.ai.tool.config;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 /**
  * 工具配置中心
@@ -15,7 +14,6 @@ import java.util.logging.Logger;
  */
 public class ToolConfigCenter {
 
-    private static final Logger LOG = Logger.getLogger(ToolConfigCenter.class.getName());
     private static final Path WORK_DIR = Path.of(System.getProperty("user.dir"));
     private final Map<String, Integer> toolTimeouts = new ConcurrentHashMap<>();
     private final int defaultTimeout = 30;

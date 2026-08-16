@@ -105,6 +105,26 @@ public final class PromptFragments {
 
     // ===== 证据块（追加在 @UserMessage 模板末尾，{{xxx}} 与 @V 参数一一对应）=====
 
+    /** 收尾报告依据（整合需求/变更/修复/测试/审查五类上游证据） */
+    public static final String REPORT_EVIDENCE = """
+
+            ## 报告依据
+            ### 需求/计划快照
+            {{originalRequirement}}
+
+            ### 变更摘要
+            {{changeSummary}}
+
+            ### 修复策略
+            {{fixStrategy}}
+
+            ### 测试结果
+            {{testResult}}
+
+            ### 审查结论
+            {{reviewResult}}
+            """;
+
     /** 审查证据（无测试证据的场景将 testResult 传空串，以内容核对为主） */
     public static final String REVIEW_EVIDENCE = """
 
@@ -123,11 +143,8 @@ public final class PromptFragments {
             {{acceptanceCriteria}}
             """;
 
-    /** 测试依据 */
-    public static final String TEST_EVIDENCE = """
-
-
-            ## 测试依据
+    /** 变更文件/详情/验收标准 三段（TEST 与 ANALYST 共享） */
+    private static final String CHANGE_EVIDENCE_SECTIONS = """
             ### 变更文件
             {{changedFiles}}
 
@@ -138,6 +155,13 @@ public final class PromptFragments {
             {{acceptanceCriteria}}
             """;
 
+    /** 测试依据 */
+    public static final String TEST_EVIDENCE = """
+
+
+            ## 测试依据
+            """ + CHANGE_EVIDENCE_SECTIONS;
+
     /** 分析依据 */
     public static final String ANALYST_EVIDENCE = """
 
@@ -146,14 +170,7 @@ public final class PromptFragments {
             ### 测试结果
             {{testResult}}
 
-            ### 变更文件
-            {{changedFiles}}
-
-            ### 变更详情(diff引用)
-            {{changedDiffRef}}
-
-            ### 验收标准
-            {{acceptanceCriteria}}
+            """ + CHANGE_EVIDENCE_SECTIONS + """
 
             ### 历史修复记录
             {{previousFixes}}

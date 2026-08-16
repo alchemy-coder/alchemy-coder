@@ -76,7 +76,7 @@ public class FileOperationTool extends FileSystemBasedTool {
 
     @Tool("列出目录内容。返回目录下的文件和子目录列表。")
     public String listDirectory(
-            @P("目录路径") @NotBlank(fieldName = "目录路径") @FilePath(mustExist = true, allowDirectory = true) String dirPath,
+            @P("目录路径") @NotBlank(fieldName = "目录路径") @FilePath(mustExist = true) String dirPath,
             @P("是否递归列出子目录内容，默认false") boolean recursive) {
 
         return executeWithAutoValidation(() -> {

@@ -114,8 +114,6 @@ public abstract class AbstractBaseTool {
             throw new ToolSecurityException(getToolName(), ErrorCode.PATH_INVALID, path);
         }
 
-        rateLimiter.checkRateLimit(getToolName());
-
         return resolved;
     }
 
@@ -123,6 +121,7 @@ public abstract class AbstractBaseTool {
         sanitizer.setContext(getToolName());
 
         try {
+            rateLimiter.checkRateLimit(getToolName());
             long start = System.currentTimeMillis();
             T result = action.get();
 
@@ -202,20 +201,6 @@ public abstract class AbstractBaseTool {
     public void checkNotBinary(Path path) throws ToolValidationException {
         if (isBinaryFile(path)) {
             throw new ToolValidationException(getToolName(), ErrorCode.BINARY_FILE, path.toString());
-        }
-    }
-
-    public void checkFileSize(Path path, long maxSizeBytes) throws ToolValidationException {
-        try {
-            long size = Files.size(path);
-            if (size > maxSizeBytes) {
-                throw new ToolValidationException(getToolName(), ErrorCode.FILE_TOO_LARGE,
-                        size / 1024, maxSizeBytes / 1024);
-            }
-        } catch (ToolValidationException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ToolExecutionException(getToolName(), ErrorCode.INTERNAL_ERROR, e);
         }
     }
 

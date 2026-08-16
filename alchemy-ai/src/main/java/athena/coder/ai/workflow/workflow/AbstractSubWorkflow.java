@@ -22,7 +22,6 @@ import static athena.coder.ai.workflow.entity.NodeEnum.REVIEWER;
 import static athena.coder.ai.workflow.entity.NodeEnum.SUMMARIZER;
 import static athena.coder.ai.workflow.entity.NodeEnum.TESTER;
 import static athena.coder.ai.workflow.entity.WorkflowState.ACCEPTANCE_CRITERIA;
-import static athena.coder.ai.workflow.entity.WorkflowState.AI_COMMIT;
 import static athena.coder.ai.workflow.entity.WorkflowState.CHANGED_DIFF_REF;
 import static athena.coder.ai.workflow.entity.WorkflowState.CHANGED_FILES;
 import static athena.coder.ai.workflow.entity.WorkflowState.FIX_STRATEGY;
@@ -57,7 +56,7 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
      */
     private static final String[] RESULT_KEYS = {
             ACCEPTANCE_CRITERIA, ORIGINAL_REQUIREMENT,
-            CHANGED_FILES, CHANGED_DIFF_REF, AI_COMMIT,
+            CHANGED_FILES, CHANGED_DIFF_REF,
             TEST_RESULT, FIX_STRATEGY, PREVIOUS_FIXES,
             REVIEW_RESULT, SUMMARIZE_RESULT
     };

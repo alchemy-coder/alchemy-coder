@@ -11,17 +11,7 @@ import java.util.List;
 public class GradleDependencyStrategy extends AbstractDependencyStrategy {
 
     public GradleDependencyStrategy(DependencyStrategyFactory factory) {
-        super(factory, DEFAULT_TIMEOUT);
-    }
-
-    @Override
-    protected String getStrategyName() {
-        return "GRADLE";
-    }
-
-    @Override
-    public String getProjectType() {
-        return ProjectTypeUtil.GRADLE;
+        super(factory, DEFAULT_TIMEOUT, ProjectTypeUtil.GRADLE);
     }
 
     @Override

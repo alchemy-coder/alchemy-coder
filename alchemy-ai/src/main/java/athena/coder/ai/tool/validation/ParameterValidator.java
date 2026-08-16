@@ -79,15 +79,6 @@ public class ParameterValidator {
         if (!filePath.allowBinary()) {
             tool.checkNotBinary(resolved);
         }
-
-        if (!filePath.allowDirectory() && tool.safeIsDirectory(resolved)) {
-            throw new ToolValidationException(tool.getToolName(), ErrorCode.NOT_DIRECTORY,
-                    "路径不能是目录: " + pathStr);
-        }
-
-        if (filePath.maxSizeBytes() > 0) {
-            tool.checkFileSize(resolved, filePath.maxSizeBytes());
-        }
     }
 
     private void validateRange(Parameter param, Object value) throws ToolValidationException {

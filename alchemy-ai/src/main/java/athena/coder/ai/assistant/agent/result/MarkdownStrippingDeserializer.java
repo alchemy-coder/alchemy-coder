@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 
 import java.io.IOException;
 
@@ -37,7 +37,8 @@ public class MarkdownStrippingDeserializer extends JsonDeserializer<Object> impl
 
     private static ObjectMapper createCleanMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setAnnotationIntrospector(new NopAnnotationIntrospector() {
+        // 仅屏蔽 @JsonDeserialize 以避免递归调用自身；其余注解（@JsonIgnoreProperties/@JsonProperty/@JsonCreator）保持默认行为
+        mapper.setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
             @Override
             public Object findDeserializer(Annotated a) {
                 return null;

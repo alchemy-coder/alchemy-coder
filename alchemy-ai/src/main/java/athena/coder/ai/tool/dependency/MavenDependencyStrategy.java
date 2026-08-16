@@ -11,17 +11,7 @@ import java.util.List;
 public class MavenDependencyStrategy extends AbstractDependencyStrategy {
 
     public MavenDependencyStrategy(DependencyStrategyFactory factory) {
-        super(factory, DEFAULT_TIMEOUT);
-    }
-
-    @Override
-    protected String getStrategyName() {
-        return "MAVEN";
-    }
-
-    @Override
-    public String getProjectType() {
-        return ProjectTypeUtil.MAVEN;
+        super(factory, DEFAULT_TIMEOUT, ProjectTypeUtil.MAVEN);
     }
 
     @Override

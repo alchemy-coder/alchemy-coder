@@ -57,7 +57,7 @@ public class APITestClientTool extends AbstractBaseTool {
     @Tool("发送 HTTP 请求并返回响应结果。支持 GET、POST、PUT、DELETE 等方法。")
     public String sendRequest(
             @P("目标 URL（仅支持 http/https）") @NotBlank(fieldName = "URL") String url,
-            @P("HTTP 方法：GET/POST/PUT/DELETE/PATCH") @PatternRegex(regexp = "^(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)$", message = "不支持的 HTTP 方法") String method,
+            @P("HTTP 方法：GET/POST/PUT/DELETE/PATCH") @PatternRegex(regexp = "^(GET|POST|PUT|DELETE|PATCH)$", message = "不支持的 HTTP 方法") String method,
             @P("请求头，JSON 格式: {\"Content-Type\": \"application/json\"}") String headersJson,
             @P("请求体内容（POST/PUT/PATCH 时使用）") String body) {
 

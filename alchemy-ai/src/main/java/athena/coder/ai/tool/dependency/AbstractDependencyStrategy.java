@@ -4,27 +4,46 @@ import athena.coder.ai.tool.base.ToolResult;
 import athena.coder.ai.spi.ErrorLogger;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public abstract class AbstractDependencyStrategy implements DependencyStrategy {
-
-    protected static final Logger LOG = Logger.getLogger(AbstractDependencyStrategy.class.getName());
 
     protected static final int DEFAULT_TIMEOUT = 120;
 
     protected final DependencyStrategyFactory factory;
     protected final int timeout;
+    private final String projectType;
 
-    protected AbstractDependencyStrategy(DependencyStrategyFactory factory, int timeout) {
+    protected AbstractDependencyStrategy(DependencyStrategyFactory factory, int timeout, String projectType) {
         this.factory = factory;
         this.timeout = timeout;
+        this.projectType = projectType;
     }
 
-    protected abstract String getStrategyName();
+    protected String getStrategyName() {
+        return projectType.toUpperCase();
+    }
 
     @Override
-    public abstract String getProjectType();
+    public String getProjectType() {
+        return projectType;
+    }
+
+    /**
+     * 命令式 addDependency 的通用执行：执行命令 → 解析结果 → 成功/失败包装。
+     * 供 Go/Npm/Rust 等策略复用，消除重复的 execute/parse/error 样板。
+     */
+    protected ToolResult runInstallCommand(List<String> command, String successMessage, String commandLabel) {
+        try {
+            String rawResult = factory.executeToolCommand(command, factory.getWorkDirectory(), timeout);
+            CommandResult result = factory.parseToCommandResult(rawResult);
+            if (result.isSuccess()) {
+                return ToolResult.success(successMessage);
+            }
+            return ToolResult.error(commandLabel + " 失败:\n" + result.error());
+        } catch (Exception e) {
+            return ToolResult.error("添加" + getStrategyName() + "依赖失败", e);
+        }
+    }
 
     @Override
     public ToolResult listDependencies(boolean transitive) {

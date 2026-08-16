@@ -12,8 +12,11 @@ public enum UserFaceMode {
 
     @JsonCreator
     public static UserFaceMode fromString(String value) {
+        if (value == null || value.isBlank()) {
+            return ROUTE;
+        }
         try {
-            return valueOf(value.toUpperCase());
+            return valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             return ROUTE;
         }

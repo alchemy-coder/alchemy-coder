@@ -9,43 +9,23 @@ import java.util.List;
 public class RustDependencyStrategy extends AbstractDependencyStrategy {
 
     public RustDependencyStrategy(DependencyStrategyFactory factory) {
-        super(factory, DEFAULT_TIMEOUT);
-    }
-
-    @Override
-    protected String getStrategyName() {
-        return "RUST";
-    }
-
-    @Override
-    public String getProjectType() {
-        return ProjectTypeUtil.RUST;
+        super(factory, DEFAULT_TIMEOUT, ProjectTypeUtil.RUST);
     }
 
     @Override
     public ToolResult addDependency(Dependency dep) {
-        try {
-            List<String> command = new ArrayList<>(List.of("cargo", "add", dep.getArtifactId()));
+        List<String> command = new ArrayList<>(List.of("cargo", "add", dep.getArtifactId()));
 
-            if (dep.getVersion() != null && !dep.getVersion().isBlank()) {
-                command.add("--vers");
-                command.add(dep.getVersion());
-            }
-
-            String rawResult = factory.executeToolCommand(command, factory.getWorkDirectory(), timeout);
-            CommandResult result = factory.parseToCommandResult(rawResult);
-
-            if (result.isSuccess()) {
-                return ToolResult.success(
-                        String.format("已添加 Rust 依赖: %s%s",
-                                dep.getArtifactId(),
-                                dep.getVersion() != null ? "@" + dep.getVersion() : ""));
-            } else {
-                return ToolResult.error("cargo add 失败:\n" + result.error());
-            }
-        } catch (Exception e) {
-            return ToolResult.error("添加Rust依赖失败", e);
+        if (dep.getVersion() != null && !dep.getVersion().isBlank()) {
+            command.add("--vers");
+            command.add(dep.getVersion());
         }
+
+        return runInstallCommand(command,
+                String.format("已添加 Rust 依赖: %s%s",
+                        dep.getArtifactId(),
+                        dep.getVersion() != null ? "@" + dep.getVersion() : ""),
+                "cargo add");
     }
 
     @Override

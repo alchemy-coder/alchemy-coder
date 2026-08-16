@@ -1,6 +1,5 @@
 package athena.coder.ai.workflow.node;
 
-import athena.coder.ai.assistant.agent.result.MarkdownUtils;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.base.ToolInvocationLogger;
 import athena.coder.ai.workflow.entity.WorkflowState;
@@ -20,9 +19,7 @@ import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -60,15 +57,11 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
      * 提取 JSON 文本字段，缺失时返回默认值
      */
     protected static String textAt(JsonNode node, String pointer) {
+        if (node == null) {
+            return null;
+        }
         JsonNode target = node.at(pointer);
         return target.isMissingNode() || target.isNull() ? null : target.asText();
-    }
-
-    /**
-     * 剥离 LLM 输出的 markdown 代码块包裹，提取纯 JSON（无包裹时原样透传）
-     */
-    protected static String stripMarkdown(String raw) {
-        return MarkdownUtils.stripMarkdown(raw);
     }
 
     /**
@@ -203,10 +196,6 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         log.info(msg);
     }
 
-    protected void logFine(String msg) {
-        log.fine(msg);
-    }
-
     /**
      * 记录节点开始日志：kv 按 key1, value1, key2, value2... 成对传入
      * <p>
@@ -234,102 +223,6 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         System.arraycopy(prefix, 0, merged, 0, prefix.length);
         System.arraycopy(kv, 0, merged, prefix.length, kv.length);
         logStart(action, merged);
-    }
-
-    /**
-     * 将 LLM 返回的原始文本（可能被 ```json ... ``` 包裹）解析为强类型结果对象。
-     * <p>
-     * 统一处理流程：剥离 markdown 包裹 → Jackson 反序列化 → 空值校验
-     *
-     * @param raw       LLM 原始输出文本
-     * @param type      目标结果类型
-     * @param agentName Agent 名称（用于异常提示）
-     * @return 解析后的结果对象，保证非 null
-     * @throws RocAgentException 解析失败或结果为空时抛出
-     */
-    protected <T> T parseResult(String raw, Class<T> type, String agentName) {
-        if (raw == null || raw.isBlank()) {
-            throw new RocAgentException(agentName + " 返回了空结果");
-        }
-        String json = MarkdownUtils.stripMarkdown(raw);
-        try {
-            return doParse(json, type, agentName);
-        } catch (Exception firstAttempt) {
-            // stripMarkdown 可能没剥离干净（如前面有自然语言前缀），降级提取
-            String extracted = MarkdownUtils.extractJson(raw);
-            if (extracted != null && !extracted.equals(json)) {
-                try {
-                    return doParse(extracted, type, agentName);
-                } catch (Exception secondAttempt) {
-                    ErrorLogger.warn(agentName + ".parseResult", "降级提取后解析仍失败: " + secondAttempt.getMessage());
-                }
-            }
-            ErrorLogger.warn(agentName + ".parseResult", "输出解析失败，原始输出(前500字符): " + truncate(raw, 500));
-            throw new RocAgentException(agentName + " 输出解析失败: " + firstAttempt.getMessage());
-        }
-    }
-
-    private <T> T doParse(String json, Class<T> type, String agentName) {
-        try {
-            T result = MAPPER.readValue(json, type);
-            if (result == null) {
-                throw new RocAgentException(agentName + " 返回了空结果");
-            }
-            return result;
-        } catch (RocAgentException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RocAgentException(agentName + " 输出解析失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 解析 Agent 输出（可重试版）：解析失败时转为普通异常（非 RocAgentException），
-     * 使 {@link #callAgentWithRetry} 携带错误信息重试，而不是被当作业务异常直接上抛终止工作流。
-     * <p>
-     * 在 {@link #callAgentWithRetry} 的 AgentCall 中应使用本方法而非 {@link #parseResult}
-     */
-    protected <T> T parseResultRetryable(String raw, Class<T> type, String agentName) throws Exception {
-        try {
-            return parseResult(raw, type, agentName);
-        } catch (RocAgentException e) {
-            throw new Exception(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 解析 Agent 返回的 JSON（先剥离 markdown 包裹），失败时构建含 rawOutput/parseError 的错误节点兜底
-     *
-     * @param what              结果描述（用于日志，如"测试结果"）
-     * @param errorFieldsFiller 兜底节点的差异化字段填充器（如 status=ERROR、verdict=BLOCKED）
-     */
-    protected JsonNode parseJsonSafe(String raw, String what, Consumer<ObjectNode> errorFieldsFiller) {
-        try {
-            return MAPPER.readTree(stripMarkdown(raw));
-        } catch (Exception e) {
-            ErrorLogger.log(getClass().getSimpleName(), e);
-            ObjectNode errorResult = MAPPER.createObjectNode();
-            errorFieldsFiller.accept(errorResult);
-            errorResult.put("rawOutput", raw);
-            errorResult.put("parseError", e.getMessage());
-            return errorResult;
-        }
-    }
-
-    /**
-     * 构建系统异常时的 fallback 结果 JSON：骨架（构建/序列化/最小兜底）统一，差异化字段由 filler 填充
-     *
-     * @param filler      fallback 字段填充器
-     * @param minimalJson 序列化再失败时返回的最小 JSON
-     */
-    protected String buildFallbackErrorJson(Consumer<ObjectNode> filler, String minimalJson) {
-        try {
-            ObjectNode fallback = MAPPER.createObjectNode();
-            filler.accept(fallback);
-            return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fallback);
-        } catch (Exception e) {
-            return minimalJson;
-        }
     }
 
     /**

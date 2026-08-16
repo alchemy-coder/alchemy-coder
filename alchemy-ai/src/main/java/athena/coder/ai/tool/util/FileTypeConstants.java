@@ -23,12 +23,6 @@ public final class FileTypeConstants {
 
     public static final Predicate<Path> CODE_FILE_FILTER = file -> isCodeFile(file.getFileName().toString());
 
-    public static final Predicate<Path> TEXT_FILE_FILTER = file -> {
-        String fileName = file.getFileName().toString().toLowerCase();
-        int dotIndex = fileName.lastIndexOf('.');
-        return dotIndex < 0 || !BINARY_EXTENSIONS.contains(fileName.substring(dotIndex));
-    };
-
     public static final Predicate<Path> CONFIG_FILE_FILTER = file -> {
         String fileName = file.getFileName().toString().toLowerCase();
         return fileName.endsWith(".xml") || fileName.endsWith(".yml") || fileName.endsWith(".yaml")
@@ -49,9 +43,5 @@ public final class FileTypeConstants {
         String lower = fileName.toLowerCase();
         int dotIndex = lower.lastIndexOf('.');
         return dotIndex >= 0 && CODE_EXTENSIONS.contains(lower.substring(dotIndex));
-    }
-
-    public static boolean isIgnoredDir(Path path) {
-        return path != null && IGNORED_DIRS.contains(path.getFileName().toString());
     }
 }
