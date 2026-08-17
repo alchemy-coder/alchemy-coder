@@ -150,13 +150,6 @@ public class SqliteEmbeddingStore implements EmbeddingStore<TextSegment> {
                 .toList());
     }
 
-    /**
-     * 删除指定来源文件的全部 chunk，增量重建前调用
-     */
-    public void deleteByFile(String filePath) {
-        AiInfra.embeddings().deleteByFile(projectKey, model, filePath);
-    }
-
     @Override
     public void removeAll() {
         AiInfra.embeddings().deleteByProject(projectKey, model);

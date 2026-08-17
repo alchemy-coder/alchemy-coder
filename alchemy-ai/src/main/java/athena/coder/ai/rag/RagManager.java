@@ -5,9 +5,11 @@ import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.util.ProjectKeyUtil;
 import athena.coder.entity.model.EmbeddingModelEnum;
 import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.EmbeddingStore;
 
 import java.util.List;
 import java.util.Set;
@@ -66,7 +68,12 @@ public final class RagManager {
         try {
             executor.submit(() -> {
                 try {
-                    EmbeddingIndexer.index(projectPath, projectKey, currentEmbeddingModel, storeFor(projectPath, currentEmbeddingModel));
+                    EmbeddingModel embeddingModel = AiInfra.modelProvider().embeddingModel();
+                    if (embeddingModel == null) {
+                        return;   // 已降级，ErrorLogger 已记录
+                    }
+                    EmbeddingStore<TextSegment> store = AiInfra.modelProvider().embeddingStore(projectKey);
+                    EmbeddingIndexer.index(projectPath, projectKey, currentEmbeddingModel, store, embeddingModel);
                 } catch (Exception e) {
                     ErrorLogger.log("RagManager.index", e);
                 } finally {
@@ -93,8 +100,7 @@ public final class RagManager {
             if (cleaned.isEmpty()) {
                 return List.of();
             }
-            EmbeddingModelEnum current = MODEL_ENUM;
-            EmbeddingModel embeddingModel = EmbeddingModels.get(current);
+            EmbeddingModel embeddingModel = AiInfra.modelProvider().embeddingModel();
             if (embeddingModel == null) {
                 return List.of();
             }
@@ -105,7 +111,8 @@ public final class RagManager {
                     .maxResults(maxResults)
                     .minScore(MIN_SCORE)
                     .build();
-            return storeFor(projectPath, current).search(request).matches().stream()
+            return AiInfra.modelProvider().embeddingStore(ProjectKeyUtil.projectKey(projectPath))
+                    .search(request).matches().stream()
                     .map(m -> Content.from("文件: " + m.embedded().metadata().getString("file_path") + "\n" + m.embedded().text()))
                     .toList();
         } catch (Exception e) {
@@ -117,11 +124,6 @@ public final class RagManager {
     public void shutdown() {
         executor.shutdownNow();
         // stores.clear();
-    }
-
-    private SqliteEmbeddingStore storeFor(String projectPath, EmbeddingModelEnum model) {
-        String projectKey = ProjectKeyUtil.projectKey(projectPath);
-        return new SqliteEmbeddingStore(projectKey, model.key());
     }
 
     private static class Holder {

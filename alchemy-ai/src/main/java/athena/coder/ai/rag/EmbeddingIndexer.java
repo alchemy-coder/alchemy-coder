@@ -11,6 +11,7 @@ import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.store.embedding.EmbeddingStore;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -37,12 +38,8 @@ final class EmbeddingIndexer {
      * 执行一轮增量索引：只重建新增/变更文件，清理已删除文件。
      * 失败直接抛出，由 RagManager 统一入库；快照仅在成功后更新，失败文件下轮自动重试。
      */
-    static void index(String projectPath, String projectKey, EmbeddingModelEnum modelEnum, SqliteEmbeddingStore store) {
-        EmbeddingModel model = EmbeddingModels.get(modelEnum);
-        if (model == null) {
-            return;   // 已降级，ErrorLogger 已记录
-        }
-
+    static void index(String projectPath, String projectKey, EmbeddingModelEnum modelEnum,
+                      EmbeddingStore<TextSegment> store, EmbeddingModel model) {
         List<FileSnapshot> scanned = scan(Path.of(projectPath));
         String modelKey = modelEnum.key();
         Map<String, FileSnapshot> snapshots = AiInfra.embeddings().loadSnapshots(projectKey, modelKey);
@@ -148,7 +145,7 @@ final class EmbeddingIndexer {
      * 重建变更文件：读取 → 删旧 chunk → 切块 → 分批嵌入 → 更新指纹
      */
     private static void rebuildChangedFiles(String projectPath, String projectKey, String modelKey,
-                                            SqliteEmbeddingStore store, EmbeddingModel model,
+                                            EmbeddingStore<TextSegment> store, EmbeddingModel model,
                                             List<FileSnapshot> changed) {
         var splitter = DocumentSplitters.recursive(CHUNK_SIZE, CHUNK_OVERLAP);
         List<TextSegment> allSegments = new ArrayList<>();
@@ -159,7 +156,7 @@ final class EmbeddingIndexer {
             if (content == null || content.isBlank()) {
                 continue;
             }
-            store.deleteByFile(file.filePath());
+            AiInfra.embeddings().deleteByFile(projectKey, modelKey, file.filePath());
             Document document = Document.from(content, Metadata.from("file_path", file.filePath()));
             allSegments.addAll(splitter.split(document));
             indexed.add(file);

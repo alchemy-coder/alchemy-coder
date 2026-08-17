@@ -15,9 +15,9 @@ public final class AiInfra {
 
     private static volatile ErrorLogSink errorLog;
     private static volatile EmbeddingRepositoryPort embeddings;
-    private static volatile ModelConfigPort models;
     private static volatile Function<String, ChatMemoryStore> chatMemoryFactory;
     private static volatile Supplier<String> projectPath;
+    private static volatile ModelProvider modelProvider;
 
     private AiInfra() {
     }
@@ -30,14 +30,14 @@ public final class AiInfra {
      */
     public static void bind(ErrorLogSink errorLogSink,
                             EmbeddingRepositoryPort embeddingRepository,
-                            ModelConfigPort modelConfig,
                             Function<String, ChatMemoryStore> chatMemory,
-                            Supplier<String> workPath) {
+                            Supplier<String> workPath,
+                            ModelProvider modelProvider) {
         errorLog = errorLogSink;
         embeddings = embeddingRepository;
-        models = modelConfig;
         chatMemoryFactory = chatMemory;
         projectPath = workPath;
+        AiInfra.modelProvider = modelProvider;
     }
 
     /**
@@ -52,11 +52,6 @@ public final class AiInfra {
         return embeddings;
     }
 
-    public static ModelConfigPort models() {
-        requireBound(models, "ModelConfigPort");
-        return models;
-    }
-
     public static ChatMemoryStore chatMemory(String agentType) {
         requireBound(chatMemoryFactory, "ChatMemoryStore 工厂");
         return chatMemoryFactory.apply(agentType);
@@ -68,6 +63,14 @@ public final class AiInfra {
     public static String projectPath() {
         requireBound(projectPath, "项目路径提供者");
         return projectPath.get();
+    }
+
+    /**
+     * 语言/向量模型与 RAG 存储提供者（由调用方组装后注入）
+     */
+    public static ModelProvider modelProvider() {
+        requireBound(modelProvider, "ModelProvider");
+        return modelProvider;
     }
 
     private static void requireBound(Object value, String name) {
