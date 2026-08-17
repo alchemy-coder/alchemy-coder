@@ -105,9 +105,19 @@ public class DbManager {
     }
 
     private static void createModelTable(Handle handle) {
+        // 旧表无 type 列则补列（区分语言大模型/向量大模型）；model 表存 api_key，只能增量补列不可重建
+        List<String> columns = handle.createQuery("PRAGMA table_info(model)")
+                .map((rs, ctx) -> rs.getString("name"))
+                .list();
+        if (!columns.isEmpty() && !columns.contains("type")) {
+            handle.execute("ALTER TABLE model ADD COLUMN type TEXT NOT NULL DEFAULT 'chat'");
+            // 历史数据回填：唯一向量模型按 name+version 改为 embedding（对应 EmbeddingModelEnum.QIANWEN_EMBEDDING_V4），其余默认 chat
+            handle.execute("UPDATE model SET type = 'embedding' WHERE name = 'qianwen' AND version = 'text-embedding-v4'");
+        }
         handle.execute("""
                 CREATE TABLE IF NOT EXISTS model (
                       id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                      type        TEXT    NOT NULL,
                       name        TEXT    NOT NULL,
                       version     TEXT    NOT NULL,
                       api_key     TEXT    NOT NULL,

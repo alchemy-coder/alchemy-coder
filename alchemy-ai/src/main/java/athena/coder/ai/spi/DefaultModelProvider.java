@@ -3,6 +3,7 @@ package athena.coder.ai.spi;
 import athena.coder.ai.rag.SqliteEmbeddingStore;
 import athena.coder.entity.model.EmbeddingModelEnum;
 import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.ModelType;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -27,7 +28,7 @@ public final class DefaultModelProvider implements ModelProvider {
     @Override
     public ChatModel chatModel(ModelEnum modelEnum) {
         String apiKey = Objects.requireNonNull(
-                models.findApiKey(modelEnum.getModel(), modelEnum.getVersion()),
+                models.findApiKey(ModelType.CHAT, modelEnum.getModel(), modelEnum.getVersion()),
                 "模型配置缺失: " + modelEnum);
         return modelEnum.getFactory().apply(apiKey);
     }
@@ -35,7 +36,7 @@ public final class DefaultModelProvider implements ModelProvider {
     @Override
     public EmbeddingModel embeddingModel() {
         EmbeddingModelEnum modelEnum = EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
-        String apiKey = models.findApiKey(modelEnum.getModel(), modelEnum.getVersion());
+        String apiKey = models.findApiKey(ModelType.EMBEDDING, modelEnum.getModel(), modelEnum.getVersion());
         if (apiKey == null || apiKey.isBlank()) {
             ErrorLogger.warn("DefaultModelProvider", "model 表未配置 embedding 模型: " + modelEnum.key() + "，RAG 已降级");
             return null;
