@@ -44,7 +44,7 @@ public final class PatternRegistry {
     public Pattern[] sqlInjectionPatterns() {
         return getOrCreateArray("sqlInjection", new String[]{
                 "(?i)(String\\s+sql\\s*=\\s*\"[^\"]*\\+\\s*)",
-                "(?i)\\.execute(Query|Update)\\(.*\\+\\s*)",
+                "(?i)\\.execute(Query|Update)\\(.*\\+\\s*\\)",
                 "(?i)\\.rawQuery\\(.*\\+",
                 "(?i)format\\(.*SELECT.*%s",
                 "(?i)f\".*SELECT.*\\{",

@@ -33,13 +33,14 @@ public class Dependency {
     }
 
     public String getCoordinates() {
+        boolean hasVersion = version != null && !version.isBlank();
         if (groupId != null && !groupId.isBlank()) {
             return String.format("%s:%s%s",
                     groupId,
                     artifactId,
-                    version != null ? ":" + version : "");
+                    hasVersion ? ":" + version : "");
         }
-        return version != null ?
+        return hasVersion ?
                 String.format("%s@%s", artifactId, version) :
                 artifactId;
     }

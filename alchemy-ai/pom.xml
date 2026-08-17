@@ -45,5 +45,29 @@
             <artifactId>langgraph4j-core</artifactId>
             <version>${langgraph4j.version}</version>
         </dependency>
+
+        <!-- 单元测试 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.12.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 测试跑在 classpath 上，绕开 JPMS 的 split-package / opens 反射约束 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                    <!-- 测试临时目录重定向到 target，便于 mvn clean 清理 -->
+                    <tempDir>${project.build.directory}/surefire</tempDir>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
