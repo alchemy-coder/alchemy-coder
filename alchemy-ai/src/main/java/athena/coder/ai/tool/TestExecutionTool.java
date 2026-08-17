@@ -10,6 +10,7 @@ import dev.langchain4j.agent.tool.Tool;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -31,6 +32,17 @@ public class TestExecutionTool extends ProcessBasedTool {
             "htmlcov/index.html",
             ".coverage"
     };
+
+    /**
+     * 各项目类型测试输出的关键行关键词（大小写敏感），命中即视为摘要行
+     */
+    private static final Map<String, String[]> SUMMARY_KEYWORDS = Map.of(
+            "maven", new String[]{"Tests run:", "BUILD SUCCESS", "BUILD FAILURE"},
+            "go", new String[]{"ok ", "FAIL", "---", "passed", "failed"},
+            "rust", new String[]{"test result:", "running", "failures:"},
+            "python", new String[]{"passed", "failed", "error", "test session", "========", "warnings"},
+            "node", new String[]{"passing", "failing", "pending", "passed", "failed"}
+    );
 
     // ==================== Tool 入口 ====================
 
@@ -125,89 +137,72 @@ public class TestExecutionTool extends ProcessBasedTool {
 
     private String extractTestSummary(String output, String projectType) {
         String[] lines = output.split("\n");
-        TestResultParser parser = getParser(projectType);
-        return parser.parse(lines);
-    }
-
-    private TestResultParser getParser(String projectType) {
-        if (projectType == null) return new FallbackParser();
-        return switch (projectType.toLowerCase()) {
-            case "maven" -> new KeywordParser("Tests run:", "BUILD SUCCESS", "BUILD FAILURE");
-            case "gradle" -> new GradleParser();
-            case "go" -> new KeywordParser("ok ", "FAIL", "---", "passed", "failed");
-            case "rust" -> new KeywordParser("test result:", "running", "failures:");
-            case "python" -> new KeywordParser("passed", "failed", "error", "test session", "========", "warnings");
-            case "node" -> new KeywordParser("passing", "failing", "pending", "passed", "failed");
-            default -> new FallbackParser();
-        };
-    }
-
-    private interface TestResultParser {
-        String parse(String[] lines);
-    }
-
-    private static class KeywordParser implements TestResultParser {
-        private final String[] keywords;
-
-        KeywordParser(String... keywords) {
-            this.keywords = keywords;
+        if (projectType == null) {
+            return fallbackSummary(lines);
         }
-
-        public String parse(String[] lines) {
-            StringBuilder sb = new StringBuilder();
-            for (String line : lines) {
-                String t = line.trim();
-                for (String kw : keywords) {
-                    if (t.contains(kw)) {
-                        sb.append(t).append("\n");
-                        break;
-                    }
-                }
-            }
-            return sb.isEmpty() ? new FallbackParser().parse(lines) : sb.toString();
+        String type = projectType.toLowerCase();
+        if ("gradle".equals(type)) {
+            String summary = gradleSummary(lines);
+            return summary.isEmpty() ? fallbackSummary(lines) : summary;
         }
+        String[] keywords = SUMMARY_KEYWORDS.get(type);
+        if (keywords != null) {
+            String summary = keywordSummary(lines, keywords);
+            return summary.isEmpty() ? fallbackSummary(lines) : summary;
+        }
+        return fallbackSummary(lines);
     }
 
-    private static class GradleParser implements TestResultParser {
-        public String parse(String[] lines) {
-            StringBuilder sb = new StringBuilder();
-            boolean inTestSection = false;
-            for (String line : lines) {
-                String t = line.trim();
-                if (t.contains("> Task :test") || t.contains("> Task :")) inTestSection = true;
-                if (inTestSection && (t.contains("tests completed") || t.contains("tests found") ||
-                        t.contains("FAILED") || t.contains("PASSED") || t.contains("BUILD SUCCESSFUL") ||
-                        t.contains("BUILD FAILED"))) {
+    private static String keywordSummary(String[] lines, String[] keywords) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : lines) {
+            String t = line.trim();
+            for (String kw : keywords) {
+                if (t.contains(kw)) {
                     sb.append(t).append("\n");
+                    break;
                 }
             }
-            return sb.isEmpty() ? new FallbackParser().parse(lines) : sb.toString();
         }
+        return sb.toString();
     }
 
-    private static class FallbackParser implements TestResultParser {
-        public String parse(String[] lines) {
-            StringBuilder sb = new StringBuilder();
-            boolean hasSummary = false;
-            for (String line : lines) {
-                String lower = line.toLowerCase();
-                if (lower.contains("tests run:") || lower.contains("test result:") ||
-                        lower.contains("tests passed") || lower.contains("tests failed") ||
-                        lower.contains("BUILD SUCCESS") || lower.contains("BUILD FAILURE") ||
-                        (lower.contains("failed") || lower.contains("passed")) &&
-                                (lower.contains("test") || lower.contains(":"))) {
-                    sb.append(line.trim()).append("\n");
-                    hasSummary = true;
-                }
+    private static String gradleSummary(String[] lines) {
+        StringBuilder sb = new StringBuilder();
+        boolean inTestSection = false;
+        for (String line : lines) {
+            String t = line.trim();
+            if (t.contains("> Task :test") || t.contains("> Task :")) inTestSection = true;
+            if (inTestSection && (t.contains("tests completed") || t.contains("tests found") ||
+                    t.contains("FAILED") || t.contains("PASSED") || t.contains("BUILD SUCCESSFUL") ||
+                    t.contains("BUILD FAILED"))) {
+                sb.append(t).append("\n");
             }
-            if (!hasSummary) {
-                int start = Math.max(0, lines.length - 20);
-                for (int i = start; i < lines.length; i++) {
-                    sb.append(lines[i]).append("\n");
-                }
-            }
-            return sb.toString();
         }
+        return sb.toString();
+    }
+
+    private static String fallbackSummary(String[] lines) {
+        StringBuilder sb = new StringBuilder();
+        boolean hasSummary = false;
+        for (String line : lines) {
+            String lower = line.toLowerCase();
+            if (lower.contains("tests run:") || lower.contains("test result:") ||
+                    lower.contains("tests passed") || lower.contains("tests failed") ||
+                    lower.contains("BUILD SUCCESS") || lower.contains("BUILD FAILURE") ||
+                    ((lower.contains("failed") || lower.contains("passed")) &&
+                            (lower.contains("test") || lower.contains(":")))) {
+                sb.append(line.trim()).append("\n");
+                hasSummary = true;
+            }
+        }
+        if (!hasSummary) {
+            int start = Math.max(0, lines.length - 20);
+            for (int i = start; i < lines.length; i++) {
+                sb.append(lines[i]).append("\n");
+            }
+        }
+        return sb.toString();
     }
 
     private Path findCoverageReport(Path dir) {

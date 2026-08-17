@@ -13,12 +13,6 @@ public class ChatDetail implements Serializable {
 
     private String uuid;
 
-    private String createAt;
-
-    private String updateAt;
-
-    private String deletedAt;
-
     public Long getChatId() {
         return chatId;
     }
@@ -49,30 +43,6 @@ public class ChatDetail implements Serializable {
 
     public void setContent(String content) {
         this.content = content;
-    }
-
-    public String getCreateAt() {
-        return createAt;
-    }
-
-    public void setCreateAt(String createAt) {
-        this.createAt = createAt;
-    }
-
-    public String getUpdateAt() {
-        return updateAt;
-    }
-
-    public void setUpdateAt(String updateAt) {
-        this.updateAt = updateAt;
-    }
-
-    public String getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(String deletedAt) {
-        this.deletedAt = deletedAt;
     }
 
     public String getUuid() {

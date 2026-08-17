@@ -1,10 +1,9 @@
 package athena.coder.ai.tool;
 
 import athena.coder.ai.tool.base.FileSystemBasedTool;
-import athena.coder.ai.tool.util.FileTypeConstants;
+import athena.coder.ai.tool.util.FileTraversalHelper;
 import athena.coder.ai.tool.exception.ErrorCode;
 import athena.coder.ai.tool.exception.ToolValidationException;
-import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.util.ProjectType;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -395,31 +394,26 @@ public class ProjectAnalysisTool extends FileSystemBasedTool {
         }
 
         boolean found = false;
-        try (Stream<Path> files = safeWalk(searchDir, 10)) {
-            List<Path> mainClasses = new ArrayList<>();
-            files.filter(Files::isRegularFile)
-                    .filter(p -> p.toString().endsWith(extension))
-                    .forEach(p -> {
-                        try {
-                            if (safeReadString(p).contains(mainPattern)) {
-                                mainClasses.add(p);
-                            }
-                        } catch (Exception e) {
-                            logFine("查找" + langLabel + "入口失败: " + p + " - " + e.getMessage());
-                        }
-                    });
-
-            for (Path p : mainClasses) {
-                String relativePath = searchDir.relativize(p).toString();
-                String displayPath = relativePath.replace(java.io.File.separator, ".");
-                if (extension.equals(".java")) {
-                    displayPath = displayPath.replace(".java", "");
+        List<Path> mainClasses = new ArrayList<>();
+        for (Path p : FileTraversalHelper.findFiles(searchDir,
+                file -> file.getFileName().toString().endsWith(extension), 10, Integer.MAX_VALUE)) {
+            try {
+                if (safeReadString(p).contains(mainPattern)) {
+                    mainClasses.add(p);
                 }
-                result.append("  [").append(langLabel).append("] ").append(displayPath).append("\n");
-                found = true;
+            } catch (Exception e) {
+                logFine("查找" + langLabel + "入口失败: " + p + " - " + e.getMessage());
             }
-        } catch (Exception e) {
-            result.append("  ").append(langLabel).append(" 入口查找失败: ").append(e.getMessage()).append("\n");
+        }
+
+        for (Path p : mainClasses) {
+            String relativePath = searchDir.relativize(p).toString();
+            String displayPath = relativePath.replace(java.io.File.separator, ".");
+            if (extension.equals(".java")) {
+                displayPath = displayPath.replace(".java", "");
+            }
+            result.append("  [").append(langLabel).append("] ").append(displayPath).append("\n");
+            found = true;
         }
 
         return found;
@@ -473,27 +467,20 @@ public class ProjectAnalysisTool extends FileSystemBasedTool {
             stats.put(config[1], new LangStats(0, 0));
         }
 
-        try (Stream<Path> files = safeWalk(dir, 8)) {
-            files.filter(Files::isRegularFile)
-                    .filter(p -> FileTypeConstants.isCodeFile(p.getFileName().toString()))
-                    .forEach(p -> {
-                        String name = p.getFileName().toString().toLowerCase();
-                        for (String[] config : langConfigs) {
-                            if (name.endsWith(config[0])) {
-                                LangStats s = stats.get(config[1]);
-                                try {
-                                    stats.put(config[1], s.add(1, safeReadAllLines(p).size()));
-                                } catch (Exception e) {
-                                    logFine("统计代码行数失败: " + p + " - " + e.getMessage());
-                                    stats.put(config[1], s.add(1, 0));
-                                }
-                                break;
-                            }
-                        }
-                    });
-        } catch (Exception e) {
-            result.append("  统计失败: ").append(e.getMessage()).append("\n");
-            return;
+        for (Path p : FileTraversalHelper.findCodeFiles(dir, 8, Integer.MAX_VALUE)) {
+            String name = p.getFileName().toString().toLowerCase();
+            for (String[] config : langConfigs) {
+                if (name.endsWith(config[0])) {
+                    LangStats s = stats.get(config[1]);
+                    try {
+                        stats.put(config[1], s.add(1, safeReadAllLines(p).size()));
+                    } catch (Exception e) {
+                        logFine("统计代码行数失败: " + p + " - " + e.getMessage());
+                        stats.put(config[1], s.add(1, 0));
+                    }
+                    break;
+                }
+            }
         }
 
         int totalFiles = 0;
@@ -566,14 +553,9 @@ public class ProjectAnalysisTool extends FileSystemBasedTool {
             return null;
         }
 
-        try (Stream<Path> files = safeWalk(srcDir, 10)) {
-            return files.filter(p -> !safeIsDirectory(p))
-                    .filter(p -> p.getFileName().toString().equals(simpleClassName + ".java"))
-                    .findFirst()
-                    .orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
+        List<Path> matches = FileTraversalHelper.findFiles(srcDir,
+                p -> p.getFileName().toString().equals(simpleClassName + ".java"), 10, 1);
+        return matches.isEmpty() ? null : matches.get(0);
     }
 
     private int countReferences(Path dir, String className) {
@@ -582,25 +564,20 @@ public class ProjectAnalysisTool extends FileSystemBasedTool {
             return 0;
         }
 
-        java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger(0);
-        try (Stream<Path> files = safeWalk(srcDir, 10)) {
-            files.filter(p -> !safeIsDirectory(p))
-                    .filter(p -> p.toString().endsWith(".java"))
-                    .forEach(p -> {
-                        try {
-                            String content = safeReadString(p);
-                            int idx = 0;
-                            while ((idx = content.indexOf(className, idx)) != -1) {
-                                count.incrementAndGet();
-                                idx += className.length();
-                            }
-                        } catch (Exception e) {
-                            logFine("统计引用失败: " + p + " - " + e.getMessage());
-                        }
-                    });
-        } catch (Exception e) {
-            ErrorLogger.warn("ProjectAnalysisTool.countReferences", "统计引用失败: " + e.getMessage());
+        int count = 0;
+        for (Path p : FileTraversalHelper.findFiles(srcDir,
+                file -> file.toString().endsWith(".java"), 10, Integer.MAX_VALUE)) {
+            try {
+                String content = safeReadString(p);
+                int idx = 0;
+                while ((idx = content.indexOf(className, idx)) != -1) {
+                    count++;
+                    idx += className.length();
+                }
+            } catch (Exception e) {
+                logFine("统计引用失败: " + p + " - " + e.getMessage());
+            }
         }
-        return count.get();
+        return count;
     }
 }

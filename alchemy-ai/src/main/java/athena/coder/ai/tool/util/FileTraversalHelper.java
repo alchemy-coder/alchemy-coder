@@ -1,5 +1,6 @@
 package athena.coder.ai.tool.util;
 
+import athena.coder.ai.spi.ErrorLogger;
 import org.jspecify.annotations.NonNull;
 
 import java.nio.file.*;
@@ -8,13 +9,10 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public final class FileTraversalHelper {
 
     public static final Predicate<Path> CODE_FILE_FILTER = FileTypeConstants.CODE_FILE_FILTER;
-    private static final Logger LOG = Logger.getLogger(FileTraversalHelper.class.getName());
 
     private FileTraversalHelper() {
     }
@@ -44,7 +42,7 @@ public final class FileTraversalHelper {
                 }
             });
         } catch (Exception e) {
-            LOG.log(Level.FINE, "遍历文件失败: " + root, e);
+            ErrorLogger.log("FileTraversalHelper.findFiles", e);
         }
         return results;
     }

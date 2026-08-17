@@ -3,13 +3,13 @@ package athena.coder.ai.assistant.model.factory;
 import athena.coder.ai.assistant.model.DefaultChatAssistant;
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.tool.config.AgentToolPolicy;
-import athena.coder.entity.model.ModelEntity;
 import athena.coder.entity.model.ModelEnum;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class AiAssistantFactory {
 
@@ -34,12 +34,14 @@ public class AiAssistantFactory {
     }
 
     public static <T> T newChatAssistant(ModelEnum modelEnum, Class<T> agentClass, AgentToolPolicy policy) {
-        ModelEntity modelEntity = AiInfra.models().findByModel(modelEnum);
+        String apiKey = Objects.requireNonNull(
+                AiInfra.models().findApiKey(modelEnum.getModel(), modelEnum.getVersion()),
+                "模型配置缺失: " + modelEnum);
         IChatAssistant iChatAssistant = getRouterMap().get(modelEnum);
         if (iChatAssistant == null) {
             throw new IllegalArgumentException("未找到模型路由: " + modelEnum);
         }
-        return iChatAssistant.getChatAssistant(modelEntity.getApiKey(), agentClass, policy);
+        return iChatAssistant.getChatAssistant(apiKey, agentClass, policy);
     }
 
     private static class Holder {
