@@ -57,10 +57,6 @@ public class TestNode extends AbstractAgentNode {
         String acceptanceCriteria = requireUpstream(state.getStringValue(ACCEPTANCE_CRITERIA),
                 "acceptanceCriteria 为空，缺少验收标准（需要主图规划环节先生成执行计划）");
 
-        logStart(ctx, "开始" + config.actionVerb(),
-                "changedFiles长度", changedFiles.length(),
-                "changedDiffRef", truncate(changedDiffRef, 30),
-                "acceptanceCriteria长度", acceptanceCriteria.length());
         notifyModelCalling(state);
 
         TestExecutorAgent assistant = newChatAssistant(ctx.modelType(), TestExecutorAgent.class, config.policy());
@@ -73,8 +69,6 @@ public class TestNode extends AbstractAgentNode {
 
         TesterStatus status = TesterStatus.from(testResult.status());
         String testResultJson = MAPPER.writeValueAsString(testResult);
-
-        logInfo(getClass().getSimpleName() + " 完成: status=" + status + ", result长度=" + testResultJson.length());
 
         String testIcon = switch (status) {
             case PASS -> "[通过]";
@@ -95,7 +89,6 @@ public class TestNode extends AbstractAgentNode {
     private String determineNextNode(TesterStatus status) {
         return switch (status) {
             case PASS, SKIP -> {
-                logInfo("测试" + status + "，路由到 " + config.passTarget().name());
                 yield config.passTarget().name();
             }
             case FAIL, ERROR -> {

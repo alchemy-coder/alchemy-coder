@@ -33,7 +33,6 @@ public class PlanNode extends AbstractAgentNode {
         WorkflowMode workflowMode = ctx.requireWorkflowMode();
 
         notifyModelCalling(state);
-        logStart(ctx, "开始规划", "message", truncate(userMessage, 100));
 
         PlannerAgent assistant = newChatAssistant(ctx.modelType(), PlannerAgent.class, AgentToolPolicy.PLANNER);
         AgentCall<PlanResult> call = request -> {
@@ -52,9 +51,6 @@ public class PlanNode extends AbstractAgentNode {
         JsonNode blueprintNode = result.designBlueprint();
         String designBlueprint = blueprintNode.toString();
         String acceptanceCriteria = result.acceptanceCriteria();
-
-        logInfo(String.format("PlanNode 规划完成: designBlueprint长度=%d, acceptanceCriteria=已提取",
-                designBlueprint.length()));
 
         // 第二层：输出结构化执行计划给用户（JSON → Markdown 表格）
         String planMarkdown = blueprintToMarkdown(blueprintNode);

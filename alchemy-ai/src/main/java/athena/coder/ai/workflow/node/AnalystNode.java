@@ -67,12 +67,6 @@ public class AnalystNode extends AbstractAgentNode {
                 "acceptanceCriteria 为空，缺少验收标准");
         String previousFixes = state.getStringValue(PREVIOUS_FIXES);
 
-        logStart(ctx, "开始" + config.actionVerb(),
-                "testResult长度", testResult.length(),
-                "changedFiles长度", changedFiles.length(),
-                "changedDiffRef", truncate(changedDiffRef, 30),
-                "acceptanceCriteria长度", acceptanceCriteria.length(),
-                "hasPreviousFixes", previousFixes != null && !previousFixes.isBlank());
         notifyModelCalling(state);
 
         FixAnalystAgent assistant = newChatAssistant(ctx.modelType(), FixAnalystAgent.class, config.policy());
@@ -90,9 +84,6 @@ public class AnalystNode extends AbstractAgentNode {
         int loopCount = state.getIntValue(DEBUG_LOOP_COUNT) + 1;
         String nextNode = determineNextNode(shouldEscalate, loopCount);
         String updatedPreviousFixes = appendPreviousFixes(previousFixes, MAPPER.readTree(fixStrategyJson));
-
-        logInfo(String.format("%s 完成: shouldEscalate=%b, result长度=%d",
-                getClass().getSimpleName(), shouldEscalate, fixStrategyJson.length()));
 
         if (shouldEscalate) {
             notifyResult(state, "[警告]", config.escalateMsg());
@@ -120,7 +111,6 @@ public class AnalystNode extends AbstractAgentNode {
             ErrorLogger.warn(getClass().getSimpleName(), "修复回环已达上限(" + MAX_DEBUG_LOOPS + "次)，熔断并路由到 SUMMARIZER 收尾");
             return NodeEnum.SUMMARIZER.name();
         }
-        logInfo("[OK] 分析完成(第" + loopCount + "轮)，路由到 CODER 执行修复策略");
         return NodeEnum.CODER.name();
     }
 

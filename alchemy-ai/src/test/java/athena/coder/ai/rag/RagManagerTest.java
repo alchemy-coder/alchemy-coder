@@ -56,11 +56,11 @@ class RagManagerTest {
 
     @AfterEach
     void resetInfra() {
-        AiInfra.bind(null, null, null, null, null);
+        AiInfra.bind(null, null, null, null, null, null);
     }
 
     private static void bind(String projectPath, ModelProvider provider) {
-        AiInfra.bind(null, null, null, () -> projectPath, provider);
+        AiInfra.bind(null, null, null, () -> projectPath, provider, null);
     }
 
     @Test

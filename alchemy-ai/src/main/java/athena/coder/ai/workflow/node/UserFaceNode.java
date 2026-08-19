@@ -30,7 +30,6 @@ public class UserFaceNode extends AbstractAgentNode {
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
         String userMessage = state.getUserMessage();
-        logStart(ctx, "开始处理", "userMessage", truncate(userMessage, 100));
         notifyModelCalling(state);
 
         // 每轮对话入口刷新索引：增量扫描无变更时零 API 开销，保证代码变更后 RAG 不长期滞后

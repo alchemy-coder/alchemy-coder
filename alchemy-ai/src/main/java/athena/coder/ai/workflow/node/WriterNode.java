@@ -68,7 +68,6 @@ public class WriterNode extends AbstractAgentNode {
             throw new RocAgentException(getClass().getSimpleName() + ": 项目目录不是 git 仓库: " + ctx.projectPath());
         }
         notifyModelCalling(state);
-        logStart(ctx, "开始" + config.actionVerb());
 
         String taskDescription = assembleTaskDescription(state);
 
@@ -83,8 +82,6 @@ public class WriterNode extends AbstractAgentNode {
             ErrorLogger.warn(getClass().getSimpleName(), "CoderResult.changedFiles 为空，尝试 fallback 提取");
             changedFiles = fallbackExtractFiles(coderResult);
         }
-
-        logInfo(getClass().getSimpleName() + " 完成: changedFiles=" + changedFiles + ", diffRef=" + isolation.diffRef());
 
         if (!changedFiles.isBlank()) {
             String[] files = changedFiles.split(",");
@@ -168,7 +165,6 @@ public class WriterNode extends AbstractAgentNode {
             files.add(fm.group(1));
         }
         if (!files.isEmpty()) {
-            logInfo("Fallback 提取到 " + files.size() + " 个文件路径");
             return String.join(",", files);
         }
         return "";

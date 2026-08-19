@@ -46,7 +46,6 @@ public class PlanConfirmNode extends AbstractAgentNode {
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
         Long taskId = state.getTaskId();
-        logStart(ctx, "等待用户确认执行计划", "taskId", taskId);
 
         // 用确认卡片类型输出：独立醒目样式；且与 PLANNER 的 ROBOT_RESULT 计划内容不同 type，upsert 不会互相覆盖
         state.outputBotResponse("""
@@ -65,14 +64,11 @@ public class PlanConfirmNode extends AbstractAgentNode {
             reply = HumanGate.await(taskId);
         } catch (RocAgentException e) {
             // 确认超时/等待中断：门已在 finally 清理，用户后续消息走新工作流
-            logInfo("PlanConfirmNode 确认等待终止: " + e.getMessage());
             state.outputBotResponse("⏰ 执行计划确认超时，本次流程结束。如需继续，请重新发送消息。", ChatEnum.ROBOT);
             return Map.of(NEXT_NODE, END);
         } finally {
             HumanGate.remove(taskId);
         }
-
-        logInfo("PlanConfirmNode 收到用户回复: " + truncate(reply, 100));
 
         ConfirmIntentResult intentResult = classifyReply(state, ctx, reply);
 
@@ -87,7 +83,6 @@ public class PlanConfirmNode extends AbstractAgentNode {
         // 拒绝：回环计数熔断
         int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
         if (count > MAX_REPLAN_COUNT) {
-            logInfo("PlanConfirmNode 重规划次数超限（" + count + "），熔断终止");
             state.outputBotResponse("⚠️ 已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
             return Map.of(NEXT_NODE, END);
         }
@@ -123,7 +118,6 @@ public class PlanConfirmNode extends AbstractAgentNode {
                     "你上次的输出格式不正确，请重新判定用户意图并严格按JSON格式输出。用户回复: " + reply,
                     call, null);
         } catch (Exception e) {
-            logInfo("PlanConfirmNode 意图判定模型调用失败，降级为关键词规则: " + e.getMessage());
             return fallbackClassify(reply);
         }
     }

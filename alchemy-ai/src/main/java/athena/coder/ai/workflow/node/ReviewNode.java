@@ -71,11 +71,6 @@ public class ReviewNode extends AbstractAgentNode {
 
         String changeSummary = buildChangeSummary(changedFiles, changedDiffRef);
 
-        logStart(ctx, "开始审查",
-                "originalRequirement长度", originalRequirement.length(),
-                "changeSummary长度", changeSummary.length(),
-                "testResult长度", testResult.length(),
-                "acceptanceCriteria长度", acceptanceCriteria != null ? acceptanceCriteria.length() : 0);
         notifyModelCalling(state);
 
         ReviewAgent assistant = newChatAssistant(ctx.modelType(), ReviewAgent.class, config.policy());
@@ -89,8 +84,6 @@ public class ReviewNode extends AbstractAgentNode {
         // 缺失 verdict 时 ReviewVerdict.from 默认 BLOCKED，确保安全
         ReviewVerdict verdict = ReviewVerdict.from(reviewResult.verdict());
         String reviewResultJson = MAPPER.writeValueAsString(reviewResult);
-
-        logInfo(getClass().getSimpleName() + " 完成: verdict=" + verdict + ", result长度=" + reviewResultJson.length());
 
         String reviewIcon = switch (verdict) {
             case APPROVED, APPROVED_WITH_NOTES -> "[通过]";
@@ -127,7 +120,6 @@ public class ReviewNode extends AbstractAgentNode {
     private String determineNextNode(ReviewVerdict verdict, int loopCount) {
         return switch (verdict) {
             case APPROVED, APPROVED_WITH_NOTES -> {
-                logInfo("审查通过(" + verdict + ")，路由到 SUMMARIZER 进行收尾");
                 yield NodeEnum.SUMMARIZER.name();
             }
             case REQUEST_CHANGES -> {

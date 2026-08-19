@@ -66,6 +66,7 @@ public class DbManager {
         createModelTable(handle);
         createChatMemoryTable(handle);
         createErrorLogTable(handle);
+        createNodeExecutionTable(handle);
         createRagTables(handle);
     }
 
@@ -164,6 +165,27 @@ public class DbManager {
                 """);
         handle.execute("""
                 CREATE INDEX IF NOT EXISTS idx_error_log_create_at ON error_log(create_at);
+                """);
+    }
+
+    /** 节点执行轨迹表（入参/出参/当前 state/异常信息） */
+    private static void createNodeExecutionTable(Handle handle) {
+        handle.execute("""
+                CREATE TABLE IF NOT EXISTS node_execution (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id     INTEGER NOT NULL,
+                    node_name   TEXT    NOT NULL,
+                    phase       TEXT    NOT NULL,
+                    input_json  TEXT,
+                    output_json TEXT,
+                    state_json  TEXT,
+                    error_msg   TEXT,
+                    cost_ms     INTEGER,
+                    create_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+                );
+                """);
+        handle.execute("""
+                CREATE INDEX IF NOT EXISTS idx_node_exec_task ON node_execution(task_id, id);
                 """);
     }
 

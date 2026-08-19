@@ -24,7 +24,7 @@ class SqliteEmbeddingStoreTest {
 
     @AfterEach
     void resetInfra() {
-        AiInfra.bind(null, null, null, null, null);
+        AiInfra.bind(null, null, null, null, null, null);
     }
 
     private static SqliteEmbeddingStore store() {
@@ -51,7 +51,7 @@ class SqliteEmbeddingStoreTest {
                 new RagChunk(2L, "A.java", "aaa", new float[]{1, 0, 0})
         );
         repo.searchFts = List.of();
-        AiInfra.bind(null, repo, null, null, null);
+        AiInfra.bind(null, repo, null, null, null, null);
 
         EmbeddingSearchResult<TextSegment> result = store().search(request(new float[]{1, 0, 0}, 10, 0.5));
         assertEquals(List.of("2", "1"), ids(result));
@@ -64,7 +64,7 @@ class SqliteEmbeddingStoreTest {
                 new RagChunk(1L, "B.java", "bbb", new float[]{0, 1, 0})   // cos=0 -> score 0.5, 被 minScore=0.51 过滤
         );
         repo.searchFts = List.of();
-        AiInfra.bind(null, repo, null, null, null);
+        AiInfra.bind(null, repo, null, null, null, null);
 
         EmbeddingSearchResult<TextSegment> result = store().search(request(new float[]{1, 0, 0}, 10, 0.51));
         assertEquals(List.of("2"), ids(result));
@@ -77,7 +77,7 @@ class SqliteEmbeddingStoreTest {
                 new RagChunk(1L, "B.java", "bbb", new float[]{0, 1, 0})
         );
         repo.searchFts = List.of();
-        AiInfra.bind(null, repo, null, null, null);
+        AiInfra.bind(null, repo, null, null, null, null);
 
         EmbeddingSearchResult<TextSegment> result = store().search(request(new float[]{1, 0, 0}, 1, 0.0));
         assertEquals(1, result.matches().size());
@@ -88,7 +88,7 @@ class SqliteEmbeddingStoreTest {
     void search_rrfFusion_promotesBothRecalled() {
         repo.loadByProject = List.of(new RagChunk(1L, "A.java", "aaa", new float[]{1, 0, 0}));
         repo.searchFts = List.of(new Hit(1L, "A.java", "aaa"), new Hit(2L, "B.java", "bbb"));
-        AiInfra.bind(null, repo, null, null, null);
+        AiInfra.bind(null, repo, null, null, null, null);
 
         EmbeddingSearchResult<TextSegment> result = store().search(request(new float[]{1, 0, 0}, 10, 0.5));
         assertEquals(2, result.matches().size());
@@ -97,7 +97,7 @@ class SqliteEmbeddingStoreTest {
 
     @Test
     void addAll_delegatesToBatchInsert() {
-        AiInfra.bind(null, repo, null, null, null);
+        AiInfra.bind(null, repo, null, null, null, null);
 
         List<String> ids = store().addAll(
                 List.of(Embedding.from(new float[]{1, 0, 0})),

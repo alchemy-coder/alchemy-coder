@@ -64,6 +64,7 @@
                 <version>3.2.5</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <argLine>--add-opens com.google.gson/com.google.gson.internal=ALL-UNNAMED</argLine>
                     <!-- 测试临时目录重定向到 target，便于 mvn clean 清理 -->
                     <tempDir>${project.build.directory}/surefire</tempDir>
                 </configuration>

@@ -14,7 +14,6 @@ import org.bsc.langgraph4j.action.NodeAction;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 import static athena.coder.ai.workflow.entity.NodeEnum.CODER;
 import static athena.coder.ai.workflow.entity.NodeEnum.DEBUGGER;
@@ -40,10 +39,8 @@ import static org.bsc.langgraph4j.GraphDefinition.END;
  */
 public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
 
-    protected final Logger log = Logger.getLogger(getClass().getName());
-
     /**
-     * 子工作流名称（用于日志与 UI 提示）
+     * 子工作流名称（用于 UI 提示）
      */
     protected abstract String workflowName();
 
@@ -58,7 +55,6 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
             throw new RocAgentException(getClass().getSimpleName() + ": state 不能为 null");
         }
         long startMs = System.currentTimeMillis();
-        log.info("▶ [" + workflowName() + "] 子工作流启动, taskId=" + state.getTaskId());
 
         try {
             GraphDSL g = new GraphDSL(new StateGraph<>(WorkflowState::new));
@@ -73,7 +69,6 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
                 state.outputBotResponse("[警告] " + workflowName() + " 执行结束，但未获取到执行结果", ChatEnum.ROBOT_ERROR);
                 return Map.of();
             }
-            log.info(String.format("■ [%s] 子工作流执行完成，耗时 %dms", workflowName(), costMs));
             return collectResults(state, finalState.get());
         } catch (Exception e) {
             long costMs = System.currentTimeMillis() - startMs;

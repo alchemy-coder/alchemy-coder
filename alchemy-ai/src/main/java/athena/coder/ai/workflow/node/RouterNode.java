@@ -22,7 +22,6 @@ public class RouterNode extends AbstractAgentNode {
 
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
-        logStart(ctx, "开始路由");
         notifyModelCalling(state);
 
         RouterAgent router = newChatAssistant(ctx.modelType(), RouterAgent.class, AgentToolPolicy.ROUTER);
@@ -43,7 +42,6 @@ public class RouterNode extends AbstractAgentNode {
                 });
 
         WorkflowMode mode = result.workflowMode();
-        logInfo("RouterNode 路由完成: workflowMode=" + mode);
         return Map.of(WORKFLOW_MODE, mode);
     }
 

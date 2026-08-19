@@ -10,6 +10,7 @@ import athena.coder.app.ProjectManager;
 import athena.coder.infra.DbManager;
 import athena.coder.infra.repository.DbErrorLogSink;
 import athena.coder.infra.repository.JdbiChatMemoryStore;
+import athena.coder.infra.repository.NodeExecutionRepository;
 import athena.coder.infra.repository.SqliteEmbeddingRepository;
 import athena.coder.infra.repository.SqliteModelConfig;
 import javafx.application.Application;
@@ -34,7 +35,8 @@ public class ApplicationLauncher extends Application {
         // 组合根装配：向 ai 层注入 infra 端口实现（依赖反转，ai 不依赖 infra）
         ModelConfigPort modelConfig = new SqliteModelConfig();
         AiInfra.bind(new DbErrorLogSink(), new SqliteEmbeddingRepository(),
-                JdbiChatMemoryStore::getInstance, ProjectManager::getProjectPath, new DefaultModelProvider(modelConfig));
+                JdbiChatMemoryStore::getInstance, ProjectManager::getProjectPath, new DefaultModelProvider(modelConfig),
+                new NodeExecutionRepository());
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
 //        primaryStage.setTitle(TITLE + " " + VERSION);
         primaryStage.setWidth(WIDTH);

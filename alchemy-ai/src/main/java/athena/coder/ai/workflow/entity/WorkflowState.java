@@ -129,7 +129,8 @@ public class WorkflowState extends AgentState {
 
     private final ModelEnum modelType;
 
-    private final BiConsumer<String, ChatEnum> botResponse;
+
+    private transient final BiConsumer<String, ChatEnum> botResponse;
 
     public WorkflowState(Map<String, Object> initData) {
         super(initData);

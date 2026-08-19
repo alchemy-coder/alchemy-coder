@@ -66,12 +66,6 @@ public class ReportNode extends AbstractAgentNode {
 
         String changeSummary = buildChangeSummary(changedFiles, changedDiffRef);
 
-        logStart(ctx, "开始生成" + config.actionVerb(),
-                "originalRequirement长度", originalRequirement != null ? originalRequirement.length() : 0,
-                "changeSummary长度", changeSummary.length(),
-                "fixStrategy长度", fixStrategy != null ? fixStrategy.length() : 0,
-                "testResult长度", testResult != null ? testResult.length() : 0,
-                "reviewResult长度", reviewResult != null ? reviewResult.length() : 0);
         notifyModelCalling(state);
 
         ReportAgent assistant = newChatAssistant(ctx.modelType(), ReportAgent.class, config.policy());
@@ -85,8 +79,6 @@ public class ReportNode extends AbstractAgentNode {
         String summarizeResultJson = MAPPER.writeValueAsString(summarizeResult);
 
         validateSummarizeResult(summarizeResult);
-
-        logInfo(getClass().getSimpleName() + " 完成: result长度=" + summarizeResultJson.length());
 
         // 输出报告给用户
         String reportTitle = textAt(summarizeResult.report(), "/title");

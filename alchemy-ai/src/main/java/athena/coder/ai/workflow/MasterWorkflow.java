@@ -18,7 +18,6 @@ import org.bsc.langgraph4j.GraphStateException;
 import org.bsc.langgraph4j.StateGraph;
 
 import java.util.Map;
-import java.util.logging.Logger;
 
 import static athena.coder.ai.workflow.entity.NodeEnum.PLANNER;
 import static athena.coder.ai.workflow.entity.NodeEnum.PLAN_CONFIRM;
@@ -28,8 +27,6 @@ import static athena.coder.ai.workflow.workflow.AbstractSubWorkflow.routeBySigna
 import static athena.coder.ai.workflow.workflow.AbstractSubWorkflow.selfTargets;
 
 public class MasterWorkflow {
-
-    private static final Logger LOG = Logger.getLogger(MasterWorkflow.class.getName());
 
     public void start(Map<String, Object> initialState) throws GraphStateException {
         if (initialState == null || initialState.isEmpty()) {
@@ -71,11 +68,9 @@ public class MasterWorkflow {
 
         CompiledGraph<WorkflowState> compiledGraph = g.compile();
         long startMs = System.currentTimeMillis();
-        compiledGraph.invoke(initialState)
-                .ifPresentOrElse(
-                        state -> LOG.info(String.format("■ MasterWorkflow 执行完成，taskId: %d，总耗时 %dms",
-                                state.getTaskId(), System.currentTimeMillis() - startMs)),
-                        () -> ErrorLogger.warn("MasterWorkflow", String.format("执行结束但未返回最终状态，总耗时 %dms",
-                                System.currentTimeMillis() - startMs)));
+        if (compiledGraph.invoke(initialState).isEmpty()) {
+            ErrorLogger.warn("MasterWorkflow", String.format("执行结束但未返回最终状态，总耗时 %dms",
+                    System.currentTimeMillis() - startMs));
+        }
     }
 }

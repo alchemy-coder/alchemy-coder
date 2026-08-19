@@ -1,9 +1,12 @@
 package athena.coder.ai.workflow.node;
 
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
+import athena.coder.ai.spi.AiInfra;
+import athena.coder.ai.spi.ErrorLogger;
+import athena.coder.ai.spi.NodeExecutionRecord;
+import athena.coder.ai.spi.NodeExecutionSink;
 import athena.coder.ai.tool.base.ToolInvocationLogger;
 import athena.coder.ai.workflow.entity.WorkflowState;
-import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.util.ProjectTypeUtil;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.ModelEnum;
@@ -12,15 +15,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.Gson;
 import org.bsc.langgraph4j.action.NodeAction;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.logging.Logger;
 
 /**
  * Agent 节点模板基类
@@ -31,9 +35,9 @@ import java.util.logging.Logger;
  * 2. {@link #callAgentWithRetry}：统一的“首调 → 任何异常带错误信息重试一次 → 兕底/上抛”策略（泛型，支持强类型结果）
  * 3. {@link #requireUpstream}/{@link #warnIfBlank}：上游数据声明式校验
  * 4. {@link #textAt}：Agent 输出 JSON 字段提取（JSON Pointer）
- * 5. {@link #logStart}：统一的节点开始日志（key-value 成对传入，支持 NodeContext 上下文字段自动前缀）
- * 6. {@link #buildChangeSummary}：changedFiles + diffRef 合并为结构化 JSON（Jackson 构建，避免手拼注入）
- * 7. {@link #sessionId}：会话 ID 节点侧生成（提示词不再让 LLM 自制 ID）
+ * 5. {@link #buildChangeSummary}：changedFiles + diffRef 合并为结构化 JSON（Jackson 构建，避免手拼注入）
+ * 6. {@link #sessionId}：会话 ID 节点侧生成（提示词不再让 LLM 自制 ID）
+ * 7. 每次节点执行把入参/出参/当前 state 持久化到 {@link NodeExecutionSink}（替代原执行日志）
  * <p>
  * 节点差异化逻辑（determineNextNode/输出组装）保留在各子类与角色基类中
  */
@@ -41,7 +45,6 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
 
     protected static final ObjectMapper MAPPER = new ObjectMapper();
     protected static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
-    private final Logger log = Logger.getLogger(getClass().getName());
 
     /**
      * 校验上游必填数据，为空时抛出携带指引信息的业务异常
@@ -98,16 +101,17 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         validateBaseContext(state);
         String nodeName = getClass().getSimpleName();
         long startMs = System.currentTimeMillis();
-        log.info("▶ [" + nodeName + "] 节点开始执行，state.nextNode = " + state.data().get(WorkflowState.NEXT_NODE));
+        String inputJson = new Gson().toJson(state.data());
         enableToolProgress(state);
         try {
             Map<String, Object> result = doApply(state, buildContext(state));
             long costMs = System.currentTimeMillis() - startMs;
-            log.info(String.format("■ [%s] 节点执行完成，耗时 %dms，路由信号→ %s",
-                    nodeName, costMs, result.getOrDefault(WorkflowState.NEXT_NODE, "(无信号，走静态边)")));
+            record(state, nodeName, "END", inputJson, result, null, costMs);
             return result;
         } catch (Exception e) {
             ErrorLogger.log(nodeName, e, state.getTaskId(), null, null);
+            long costMs = System.currentTimeMillis() - startMs;
+            record(state, nodeName, "ERROR", inputJson, null, e.getMessage(), costMs);
             throw e;
         } finally {
             disableToolProgress();
@@ -190,40 +194,33 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         }
     }
 
-    // ==================== 子类日志包装方法 ====================
-
-    protected void logInfo(String msg) {
-        log.info(msg);
-    }
+    // ==================== 节点执行持久化 ====================
 
     /**
-     * 记录节点开始日志：kv 按 key1, value1, key2, value2... 成对传入
-     * <p>
-     * 值的展示形式由调用方决定（如传长度、传 truncate 后的文本）
+     * 落库一次节点执行（入参/出参/当前 state）；sink 未装配时静默跳过，不阻断主流程。
+     *
+     * @param output 出参 state 增量，ERROR 时传 null
      */
-    protected void logStart(String action, Object... kv) {
-        StringBuilder sb = new StringBuilder(getClass().getSimpleName()).append(' ').append(action).append(':');
-        for (int i = 0; i + 1 < kv.length; i += 2) {
-            sb.append("\n  - ").append(kv[i]).append('=').append(kv[i + 1]);
+    private void record(WorkflowState state, String nodeName, String phase,
+                        String inputJson, Map<String, Object> output, String errorMsg, long costMs) {
+        NodeExecutionSink sink = AiInfra.nodeExecutions();
+        if (sink == null) {
+            return;
         }
-        log.info(sb.toString());
+        String outputJson = new Gson().toJson(output);
+
+        sink.record(new NodeExecutionRecord(state.getTaskId(), nodeName, phase,
+                inputJson, outputJson, new Gson().toJson(state.data()),  errorMsg, costMs));
     }
 
-    /**
-     * 记录节点开始日志（自动前缀上下文字段 taskId/modelType/workflowMode/projectType），
-     * 差异化字段由 kv 追加；workflowMode 尚未写入的入口节点（USER_FACE/ROUTER）自动省略该字段
-     */
-    protected void logStart(NodeContext ctx, String action, Object... kv) {
-        Object[] prefix = ctx.workflowMode() != null
-                ? new Object[]{"taskId", ctx.taskId(), "modelType", ctx.modelType(),
-                "workflowMode", ctx.workflowMode(), "projectType", ctx.projectType()}
-                : new Object[]{"taskId", ctx.taskId(), "modelType", ctx.modelType(),
-                "projectType", ctx.projectType()};
-        Object[] merged = new Object[prefix.length + kv.length];
-        System.arraycopy(prefix, 0, merged, 0, prefix.length);
-        System.arraycopy(kv, 0, merged, prefix.length, kv.length);
-        logStart(action, merged);
-    }
+//    /** 执行后 state = 入参 merge 出参（ERROR 时 output=null → 等于入参） */
+//    private static Map<String, Object> merge(Map<String, Object> base, Map<String, Object> delta) {
+//        Map<String, Object> merged = new HashMap<>(base);
+//        if (delta != null) {
+//            merged.putAll(delta);
+//        }
+//        return merged;
+//    }
 
     /**
      * 向用户输出进度通知（带图标前缀 + 换行）

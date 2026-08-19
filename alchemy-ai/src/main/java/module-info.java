@@ -9,6 +9,7 @@ module alchemy_ai {
     requires org.jspecify;
     requires java.logging;
     requires java.net.http;
+    requires com.google.gson;
 
     // 领域模型对运行时反射开放（infra 层 JDBI 映射 Bean）
     opens athena.coder.entity;
