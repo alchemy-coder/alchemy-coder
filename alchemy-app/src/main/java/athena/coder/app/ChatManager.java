@@ -141,6 +141,7 @@ public class ChatManager {
                 initData.put(INIT_USER_MESSAGE, msg);
                 initData.put(INIT_MODEL_TYPE, ModelEnum.DEEPSEEKV4PRO);
                 initData.put(INIT_BOT_RESPONSE, robotResponseWriter);
+                initData.put(INIT_SESSION_ID, uuid);
 
                 // 即时反馈：用户发消息后立刻显示 loading 指示器
                 Platform.runLater(ChatView::addLoadingIndicator);

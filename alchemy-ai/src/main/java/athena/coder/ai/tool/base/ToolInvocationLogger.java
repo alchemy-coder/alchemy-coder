@@ -1,29 +1,31 @@
 package athena.coder.ai.tool.base;
 
+import athena.coder.ai.spi.AgentExecution;
+import athena.coder.ai.spi.AgentExecutionSink;
+import athena.coder.ai.spi.AiInfra;
+import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.tool.exception.ErrorCode;
 import athena.coder.ai.tool.exception.ToolExecutionException;
-import athena.coder.ai.spi.ErrorLogger;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.service.tool.ToolExecutor;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- * 工具调用日志记录器，包装 ToolExecutor，在调用前后打印入参和出参。
+ * 工具调用记录器，包装 ToolExecutor，每次调用把入参/出参/耗时/错误持久化到执行轨迹。
  * <p>
- * 同时提供静态 ThreadLocal 进度回调，节点可在调用 Agent 前注册回调，
- * 工具每次执行完成后通过回调向用户输出进度摘要。
+ * 同时提供静态 ThreadLocal 上下文：
+ * <ul>
+ *   <li>进度回调——节点调用 Agent 前注册，工具每次执行完成后向用户输出进度摘要；</li>
+ *   <li>执行上下文（taskId/sessionId/nodeName）——用于执行轨迹按会话/节点回溯。</li>
+ * </ul>
  * <p>
  * 摘要生成基于预定义的 {@link ToolSummaryConfig} 语义模板表，
  * 每个工具方法配置对应的动词、关键参数名和兜底描述，
  * 确保任何入参都能产出可读的自然语言摘要（≤20字），杜绝裸出方法名。
  */
 public class ToolInvocationLogger implements ToolExecutor {
-
-    private static final Logger LOG = Logger.getLogger(ToolInvocationLogger.class.getName());
 
     /**
      * 工具执行进度回调（ThreadLocal，节点调用 Agent 前设置，调用后清理）
@@ -176,17 +178,10 @@ public class ToolInvocationLogger implements ToolExecutor {
 
     @Override
     public String execute(ToolExecutionRequest request, Object memoryId) {
-        LOG.log(Level.INFO, "[工具调用] {0}", toolName);
-        LOG.log(Level.INFO, "  入参: {0}", request.arguments());
-
         long startTime = System.currentTimeMillis();
         try {
             String result = delegate.execute(request, memoryId);
-
-            long elapsed = System.currentTimeMillis() - startTime;
-            LOG.log(Level.INFO, "[工具调用] {0} 完成，耗时 {1}ms", new Object[]{toolName, elapsed});
-            LOG.log(Level.FINE, "  出参: {0}",
-                    result.length() > 500 ? result.substring(0, 500) + "...[截断]" : result);
+            record(request.arguments(), result, null, System.currentTimeMillis() - startTime);
 
             // 通知进度回调
             BiConsumer<String, String> cb = progressCallback.get();
@@ -196,11 +191,48 @@ public class ToolInvocationLogger implements ToolExecutor {
             }
 
             return result;
-
         } catch (Exception e) {
             ErrorLogger.log(toolName, e);
+            record(request.arguments(), null, e.getMessage(), System.currentTimeMillis() - startTime);
             throw new ToolExecutionException(toolName, ErrorCode.INTERNAL_ERROR, e);
         }
+    }
+
+    // ==================== 执行轨迹持久化 ====================
+
+    /** 工具执行上下文（ThreadLocal，节点调用 Agent 前设置、调用后清理） */
+    private record ExecContext(Long taskId, String sessionId, String nodeName) {
+    }
+
+    private static final ThreadLocal<ExecContext> execContext = new ThreadLocal<>();
+
+    public static void setExecContext(Long taskId, String sessionId, String nodeName) {
+        execContext.set(new ExecContext(taskId, sessionId, nodeName));
+    }
+
+    public static void clearExecContext() {
+        execContext.remove();
+    }
+
+    private void record(String arguments, String result, String errorMsg, long costMs) {
+        AgentExecutionSink sink = AiInfra.agentExecutions();
+        if (sink == null) {
+            return;
+        }
+        ExecContext ctx = execContext.get();
+        Long taskId = ctx != null ? ctx.taskId() : null;
+        String sessionId = ctx != null ? ctx.sessionId() : null;
+        String nodeName = ctx != null ? ctx.nodeName() : null;
+        sink.record(new AgentExecution(AgentExecution.Kind.TOOL, taskId, sessionId, nodeName,
+                toolName, null, arguments, truncateResult(result), null, errorMsg, costMs));
+    }
+
+    /** 出参截断 2000 字（SQLite 单文件防膨胀），入参原样保留 */
+    private static String truncateResult(String result) {
+        if (result == null || result.length() <= 2000) {
+            return result;
+        }
+        return result.substring(0, 2000) + "...[截断]";
     }
 
     /**

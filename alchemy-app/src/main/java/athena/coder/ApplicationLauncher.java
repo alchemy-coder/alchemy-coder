@@ -10,7 +10,7 @@ import athena.coder.app.ProjectManager;
 import athena.coder.infra.DbManager;
 import athena.coder.infra.repository.DbErrorLogSink;
 import athena.coder.infra.repository.JdbiChatMemoryStore;
-import athena.coder.infra.repository.NodeExecutionRepository;
+import athena.coder.infra.repository.AgentExecutionRepository;
 import athena.coder.infra.repository.SqliteEmbeddingRepository;
 import athena.coder.infra.repository.SqliteModelConfig;
 import javafx.application.Application;
@@ -36,7 +36,7 @@ public class ApplicationLauncher extends Application {
         ModelConfigPort modelConfig = new SqliteModelConfig();
         AiInfra.bind(new DbErrorLogSink(), new SqliteEmbeddingRepository(),
                 JdbiChatMemoryStore::getInstance, ProjectManager::getProjectPath, new DefaultModelProvider(modelConfig),
-                new NodeExecutionRepository());
+                new AgentExecutionRepository());
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
 //        primaryStage.setTitle(TITLE + " " + VERSION);
         primaryStage.setWidth(WIDTH);

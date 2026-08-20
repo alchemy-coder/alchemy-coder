@@ -66,7 +66,7 @@ public class DbManager {
         createModelTable(handle);
         createChatMemoryTable(handle);
         createErrorLogTable(handle);
-        createNodeExecutionTable(handle);
+        createAgentExecutionTable(handle);
         createRagTables(handle);
     }
 
@@ -168,14 +168,21 @@ public class DbManager {
                 """);
     }
 
-    /** 节点执行轨迹表（入参/出参/当前 state/异常信息） */
-    private static void createNodeExecutionTable(Handle handle) {
+    /**
+     * 执行轨迹表（节点 + 工具合并一张，kind 区分），入参/出参/当前 state/异常信息。
+     * <p>
+     * 旧 node_execution 表由使用者自行清理，此处不做 DROP/迁移。
+     */
+    private static void createAgentExecutionTable(Handle handle) {
         handle.execute("""
-                CREATE TABLE IF NOT EXISTS node_execution (
+                CREATE TABLE IF NOT EXISTS agent_execution (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kind        TEXT    NOT NULL,
+                    session_id  TEXT,
                     task_id     INTEGER NOT NULL,
-                    node_name   TEXT    NOT NULL,
-                    phase       TEXT    NOT NULL,
+                    node_name   TEXT,
+                    tool_name   TEXT,
+                    phase       TEXT,
                     input_json  TEXT,
                     output_json TEXT,
                     state_json  TEXT,
@@ -185,7 +192,10 @@ public class DbManager {
                 );
                 """);
         handle.execute("""
-                CREATE INDEX IF NOT EXISTS idx_node_exec_task ON node_execution(task_id, id);
+                CREATE INDEX IF NOT EXISTS idx_agent_exec_task ON agent_execution(task_id, id);
+                """);
+        handle.execute("""
+                CREATE INDEX IF NOT EXISTS idx_agent_exec_session ON agent_execution(session_id, id);
                 """);
     }
 

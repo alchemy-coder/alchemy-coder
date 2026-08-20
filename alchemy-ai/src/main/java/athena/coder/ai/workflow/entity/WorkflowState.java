@@ -110,6 +110,10 @@ public class WorkflowState extends AgentState {
     public final static String INIT_USER_MESSAGE = "USER_MESSAGE";
     public final static String INIT_MODEL_TYPE = "MODEL_TYPE";
     public final static String INIT_BOT_RESPONSE = "BOT_RESPONSE";
+    /**
+     * 会话 uuid（一次用户消息），贯穿节点/工具执行轨迹，用于按会话回溯；可空
+     */
+    public final static String INIT_SESSION_ID = "SESSION_ID";
 
 
     /**
@@ -126,6 +130,11 @@ public class WorkflowState extends AgentState {
      */
     private final String userMessage;
 
+    /**
+     * 会话 uuid（一次用户消息），执行轨迹回溯用；可能为空
+     */
+    private final String sessionId;
+
 
     private final ModelEnum modelType;
 
@@ -137,6 +146,7 @@ public class WorkflowState extends AgentState {
         this.taskId = Objects.requireNonNull((Long) initData.get(INIT_TASK_ID), "TASK_ID must not be null");
         this.workFullPath = Objects.requireNonNull((String) initData.get(INIT_WORK_FULL_PATH), "WORK_FULL_PATH must not be null");
         this.userMessage = Objects.requireNonNull((String) initData.get(INIT_USER_MESSAGE), "USER_MESSAGE must not be null");
+        this.sessionId = (String) initData.get(INIT_SESSION_ID);
         this.modelType = Objects.requireNonNull((ModelEnum) initData.get(INIT_MODEL_TYPE), "MODEL_TYPE must not be null");
         this.botResponse = Objects.requireNonNull((BiConsumer<String, ChatEnum>) initData.get(INIT_BOT_RESPONSE), "BOT_RESPONSE must not be null");
     }
@@ -151,6 +161,13 @@ public class WorkflowState extends AgentState {
 
     public String getUserMessage() {
         return userMessage;
+    }
+
+    /**
+     * 会话 uuid（一次用户消息），执行轨迹回溯用；可能为空
+     */
+    public String getSessionId() {
+        return sessionId;
     }
 
 

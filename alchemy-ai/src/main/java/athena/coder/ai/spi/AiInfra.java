@@ -18,7 +18,7 @@ public final class AiInfra {
     private static volatile Function<String, ChatMemoryStore> chatMemoryFactory;
     private static volatile Supplier<String> projectPath;
     private static volatile ModelProvider modelProvider;
-    private static volatile NodeExecutionSink nodeExecutions;
+    private static volatile AgentExecutionSink agentExecutions;
 
     private AiInfra() {
     }
@@ -34,13 +34,13 @@ public final class AiInfra {
                             Function<String, ChatMemoryStore> chatMemory,
                             Supplier<String> workPath,
                             ModelProvider modelProvider,
-                            NodeExecutionSink nodeExecutionSink) {
+                            AgentExecutionSink agentExecutionSink) {
         errorLog = errorLogSink;
         embeddings = embeddingRepository;
         chatMemoryFactory = chatMemory;
         projectPath = workPath;
         AiInfra.modelProvider = modelProvider;
-        AiInfra.nodeExecutions = nodeExecutionSink;
+        AiInfra.agentExecutions = agentExecutionSink;
     }
 
     /**
@@ -77,10 +77,10 @@ public final class AiInfra {
     }
 
     /**
-     * 节点执行持久化 sink，未装配时返回 null（节点执行静默跳过，不阻断主流程）
+     * 执行轨迹持久化 sink（节点 + 工具），未装配时返回 null（执行轨迹静默跳过，不阻断主流程）
      */
-    public static NodeExecutionSink nodeExecutions() {
-        return nodeExecutions;
+    public static AgentExecutionSink agentExecutions() {
+        return agentExecutions;
     }
 
     private static void requireBound(Object value, String name) {

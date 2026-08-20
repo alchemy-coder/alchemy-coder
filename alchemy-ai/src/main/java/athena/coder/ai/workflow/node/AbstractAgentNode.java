@@ -1,10 +1,10 @@
 package athena.coder.ai.workflow.node;
 
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
+import athena.coder.ai.spi.AgentExecution;
+import athena.coder.ai.spi.AgentExecutionSink;
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.spi.ErrorLogger;
-import athena.coder.ai.spi.NodeExecutionRecord;
-import athena.coder.ai.spi.NodeExecutionSink;
 import athena.coder.ai.tool.base.ToolInvocationLogger;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.util.ProjectTypeUtil;
@@ -38,7 +38,7 @@ import java.util.function.Function;
  * 4. {@link #textAt}：Agent 输出 JSON 字段提取（JSON Pointer）
  * 5. {@link #buildChangeSummary}：changedFiles + diffRef 合并为结构化 JSON（Jackson 构建，避免手拼注入）
  * 6. {@link #sessionId}：会话 ID 节点侧生成（提示词不再让 LLM 自制 ID）
- * 7. 每次节点执行把入参/出参/当前 state 持久化到 {@link NodeExecutionSink}（替代原执行日志）
+ * 7. 每次节点执行把入参/出参/当前 state 持久化到 {@link AgentExecutionSink}（替代原执行日志）
  * <p>
  * 节点差异化逻辑（determineNextNode/输出组装）保留在各子类与角色基类中
  */
@@ -218,14 +218,14 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
      */
     private void record(WorkflowState state, String nodeName, String phase,
                         String inputJson, Map<String, Object> output, String errorMsg, long costMs) {
-        NodeExecutionSink sink = AiInfra.nodeExecutions();
+        AgentExecutionSink sink = AiInfra.agentExecutions();
         if (sink == null) {
             return;
         }
         String outputJson = toJson(output);
         String stateJson = toJson(merge(state.data(), output));
-        sink.record(new NodeExecutionRecord(state.getTaskId(), nodeName, phase,
-                inputJson, outputJson, stateJson, errorMsg, costMs));
+        sink.record(new AgentExecution(AgentExecution.Kind.NODE, state.getTaskId(), state.getSessionId(), nodeName,
+                null, phase, inputJson, outputJson, stateJson, errorMsg, costMs));
     }
 
     /** 执行后 state = 入参 merge 出参（ERROR 时 output=null → 等于入参） */
@@ -271,13 +271,15 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         String label = stepLabel();
         ToolInvocationLogger.setProgressCallback(
                 (summary, toolName) -> notifyProgress(state, label, summary));
+        ToolInvocationLogger.setExecContext(state.getTaskId(), state.getSessionId(), getClass().getSimpleName());
     }
 
     /**
-     * 禁用工具调用进度透出，清理 ThreadLocal 回调。
+     * 禁用工具调用进度透出，清理 ThreadLocal 回调与执行上下文。
      */
     protected void disableToolProgress() {
         ToolInvocationLogger.clearProgressCallback();
+        ToolInvocationLogger.clearExecContext();
     }
 
     /**

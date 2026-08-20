@@ -1,7 +1,8 @@
 package athena.coder.ai.workflow.node;
 
+import athena.coder.ai.spi.AgentExecution;
+import athena.coder.ai.spi.AgentExecutionSink;
 import athena.coder.ai.spi.AiInfra;
-import athena.coder.ai.spi.NodeExecutionRecord;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.ModelEnum;
@@ -21,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NodeExecutionPersistenceTest {
 
+    private static final String SESSION_ID = "session-uuid-123";
+
     private static WorkflowState state() {
         Map<String, Object> m = new HashMap<>();
         m.put(WorkflowState.INIT_TASK_ID, 1L);
@@ -28,7 +31,17 @@ class NodeExecutionPersistenceTest {
         m.put(WorkflowState.INIT_USER_MESSAGE, "实现登录");
         m.put(WorkflowState.INIT_MODEL_TYPE, ModelEnum.QIANWEN37MAX);
         m.put(WorkflowState.INIT_BOT_RESPONSE, (BiConsumer<String, ChatEnum>) (msg, type) -> {});
+        m.put(WorkflowState.INIT_SESSION_ID, SESSION_ID);
         return new WorkflowState(m);
+    }
+
+    private static final class RecordingSink implements AgentExecutionSink {
+        final List<AgentExecution> records = new ArrayList<>();
+
+        @Override
+        public void record(AgentExecution execution) {
+            records.add(execution);
+        }
     }
 
     private static final class RecordingProbe extends AbstractAgentNode {
@@ -57,16 +70,19 @@ class NodeExecutionPersistenceTest {
 
     @Test
     void apply_success_recordsEndSnapshot() throws Exception {
-        List<NodeExecutionRecord> records = new ArrayList<>();
-        AiInfra.bind(null, null, null, null, null, records::add);
+        RecordingSink sink = new RecordingSink();
+        AiInfra.bind(null, null, null, null, null, sink);
         try {
             new RecordingProbe().apply(state());
 
-            assertEquals(1, records.size());
-            NodeExecutionRecord r = records.getFirst();
+            assertEquals(1, sink.records.size());
+            AgentExecution r = sink.records.getFirst();
+            assertEquals(AgentExecution.Kind.NODE, r.kind());
             assertEquals("RecordingProbe", r.nodeName());
             assertEquals("END", r.phase());
             assertEquals(1L, r.taskId());
+            assertEquals(SESSION_ID, r.sessionId());
+            assertNull(r.toolName());
             assertNotNull(r.inputJson());
             assertNotNull(r.outputJson());
             assertNotNull(r.stateJson());
@@ -79,15 +95,17 @@ class NodeExecutionPersistenceTest {
 
     @Test
     void apply_exception_recordsErrorSnapshot() {
-        List<NodeExecutionRecord> records = new ArrayList<>();
-        AiInfra.bind(null, null, null, null, null, records::add);
+        RecordingSink sink = new RecordingSink();
+        AiInfra.bind(null, null, null, null, null, sink);
         try {
             assertThrows(RuntimeException.class, () -> new ThrowingProbe().apply(state()));
 
-            assertEquals(1, records.size());
-            NodeExecutionRecord r = records.getFirst();
+            assertEquals(1, sink.records.size());
+            AgentExecution r = sink.records.getFirst();
+            assertEquals(AgentExecution.Kind.NODE, r.kind());
             assertEquals("ThrowingProbe", r.nodeName());
             assertEquals("ERROR", r.phase());
+            assertEquals(SESSION_ID, r.sessionId());
             assertNull(r.outputJson());
             assertEquals("boom", r.errorMsg());
         } finally {
