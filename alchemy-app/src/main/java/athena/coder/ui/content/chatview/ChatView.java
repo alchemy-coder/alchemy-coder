@@ -67,11 +67,23 @@ public class ChatView {
     private static final double VIRTUALIZE_BUFFER_PX = 1500;
     private static final double DEFAULT_PLACEHOLDER_HEIGHT = 100;
 
-    private static final Map<String, String> STEP_EXPERT_MAP = Map.of(
-            "[用户]", "用户专家", "[路由]", "路由专家",
-            "[规划]", "规划专家", "[编码]", "编码专家", "[测试]", "测试专家",
-            "[调试]", "调试专家", "[审查]", "审查专家", "[报告]", "报告专家",
-            "[思考]", ""
+    private static final Map<String, String> STEP_EXPERT_MAP = Map.ofEntries(
+            Map.entry("[用户]", "用户专家"),
+            Map.entry("[路由]", "路由专家"),
+            Map.entry("[规划]", "规划专家"),
+            Map.entry("[确认]", "规划专家"),
+            Map.entry("[编码]", "编码专家"),
+            Map.entry("[补测]", "补测专家"),
+            Map.entry("[文档]", "文档专家"),
+            Map.entry("[修复]", "修复专家"),
+            Map.entry("[测试]", "测试专家"),
+            Map.entry("[执行]", "测试专家"),
+            Map.entry("[验证]", "测试专家"),
+            Map.entry("[调试]", "调试专家"),
+            Map.entry("[分析]", "调试专家"),
+            Map.entry("[审查]", "审查专家"),
+            Map.entry("[报告]", "报告专家"),
+            Map.entry("[思考]", "")
     );
 
     private static volatile Ctx ctx;
