@@ -5,6 +5,7 @@ import athena.coder.ai.rag.RagManager;
 import athena.coder.infra.repository.QuestRepository;
 import athena.coder.entity.tree.ProjectNode;
 import athena.coder.entity.tree.QuestEntity;
+import com.google.gson.Gson;
 import javafx.stage.DirectoryChooser;
 
 import java.io.File;
@@ -13,7 +14,6 @@ import java.util.List;
 
 import static athena.coder.app.AppState.*;
 import static athena.coder.app.ChatManager.refreshChatDataByChatId;
-import static athena.coder.app.SerializationUtil.deserializeFromString;
 import static athena.coder.entity.tree.TreeNodeType.PROJECT;
 
 /**
@@ -22,6 +22,22 @@ import static athena.coder.entity.tree.TreeNodeType.PROJECT;
 public class ProjectManager {
 
     private ProjectManager() {
+    }
+
+    private static final Gson GSON = new Gson();
+
+    /**
+     * expand 列 JSON → ProjectNode；null/空/非法 JSON（含历史 Base64 数据）→ null，不抛出。
+     */
+    public static ProjectNode parseProjectNode(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return GSON.fromJson(json, ProjectNode.class);
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**
@@ -59,12 +75,12 @@ public class ProjectManager {
         if (expand == null || expand.isEmpty()) {
             return;
         }
-        ProjectNode projectNode = deserializeFromString(expand, ProjectNode.class);
+        ProjectNode projectNode = parseProjectNode(expand);
         if (projectNode == null) {
             return;
         }
         projectNode.setIsExpand(isExpand);
-        item.setExpand(SerializationUtil.serializeToString(projectNode));
+        item.setExpand(GSON.toJson(projectNode));
         QuestRepository.updateExpand(item.getId(), item.getExpand());
     }
 
@@ -82,7 +98,7 @@ public class ProjectManager {
         project.setParentId(-1L);
         project.setTitle(selectFolder.getName());
         project.setType(PROJECT.name());
-        project.setExpand(SerializationUtil.serializeToString(projectNode));
+        project.setExpand(GSON.toJson(projectNode));
 
         long projectId = QuestRepository.insert(project);
         curProjectTitle.set(project.getTitle());
@@ -101,7 +117,7 @@ public class ProjectManager {
         if (entity == null || entity.getExpand() == null || entity.getExpand().isBlank()) {
             return null;
         }
-        ProjectNode node = deserializeFromString(entity.getExpand(), ProjectNode.class);
+        ProjectNode node = parseProjectNode(entity.getExpand());
         return node != null ? node.getAbsoluteFullPath() : null;
     }
 
@@ -129,7 +145,7 @@ public class ProjectManager {
         if (expand == null || expand.isBlank()) {
             return;
         }
-        ProjectNode node = deserializeFromString(expand, ProjectNode.class);
+        ProjectNode node = parseProjectNode(expand);
         if (node != null && node.getAbsoluteFullPath() != null) {
             RagManager.getInstance().indexAsync(node.getAbsoluteFullPath());
         }

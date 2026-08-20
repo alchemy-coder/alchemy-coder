@@ -1,6 +1,7 @@
 module alchemy_app {
     requires alchemy_ai;
     requires alchemy_infra;
+    requires com.google.gson;
     requires javafx.graphics;
     requires javafx.controls;
     requires javafx.web;

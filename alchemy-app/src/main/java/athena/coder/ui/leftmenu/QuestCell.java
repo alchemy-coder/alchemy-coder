@@ -16,7 +16,7 @@ import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import static athena.coder.app.ProjectManager.itemClick;
-import static athena.coder.app.SerializationUtil.deserializeFromString;
+import static athena.coder.app.ProjectManager.parseProjectNode;
 import static athena.coder.entity.tree.TreeNodeType.PROJECT;
 import static athena.coder.ui.leftmenu.LeftMenuUI.leftMenuWidth;
 
@@ -69,7 +69,7 @@ public class QuestCell extends TreeCell<QuestEntity> {
             if (hBox.getChildren().isEmpty() || hBox.getChildren().get(0) != folderIcon) {
                 hBox.getChildren().clear();
                 hBox.getChildren().add(folderIcon);
-                ProjectNode projectNode = deserializeFromString(item.getExpand(), ProjectNode.class);
+                ProjectNode projectNode = parseProjectNode(item.getExpand());
                 tooltip.setText(projectNode != null ? projectNode.getAbsoluteFullPath() : item.getTitle());
             }
         } else {

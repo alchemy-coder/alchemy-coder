@@ -16,8 +16,8 @@ import java.util.*;
 
 import static athena.coder.app.AppState.*;
 import static athena.coder.app.ProjectManager.getQuestTreeData;
+import static athena.coder.app.ProjectManager.parseProjectNode;
 import static athena.coder.app.ProjectManager.updateProjectExpand;
-import static athena.coder.app.SerializationUtil.deserializeFromString;
 import static athena.coder.entity.tree.TreeNodeType.PROJECT;
 
 public class LeftMenuUI {
@@ -151,7 +151,7 @@ public class LeftMenuUI {
                 // 设置节点展开状态
                 String expand = entity.getExpand();
                 if (expand != null && !expand.isEmpty()) {
-                    ProjectNode projectNode = deserializeFromString(expand, ProjectNode.class);
+                    ProjectNode projectNode = parseProjectNode(expand);
                     if (projectNode != null && projectNode.getIsExpand() != null) {
                         childNode.setExpanded(projectNode.getIsExpand());
                     }
