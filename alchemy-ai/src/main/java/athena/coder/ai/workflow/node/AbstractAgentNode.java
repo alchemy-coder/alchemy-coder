@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
@@ -45,6 +46,7 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
 
     protected static final ObjectMapper MAPPER = new ObjectMapper();
     protected static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final Gson GSON = new Gson();
 
     /**
      * 校验上游必填数据，为空时抛出携带指引信息的业务异常
@@ -101,7 +103,7 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         validateBaseContext(state);
         String nodeName = getClass().getSimpleName();
         long startMs = System.currentTimeMillis();
-        String inputJson = new Gson().toJson(state.data());
+        String inputJson = toJson(state.data());
         enableToolProgress(state);
         try {
             Map<String, Object> result = doApply(state, buildContext(state));
@@ -197,6 +199,19 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
     // ==================== 节点执行持久化 ====================
 
     /**
+     * 序列化 state 为 JSON；过滤掉不可 JSON 化的 {@link BiConsumer}（BOT_RESPONSE 回调），
+     * 其余原样完整持久化。Gson 在 JPMS 下无法序列化 lambda（会反射其捕获字段），必须先行剔除。
+     */
+    private static String toJson(Map<String, Object> data) {
+        if (data == null) {
+            return null;
+        }
+        Map<String, Object> persistable = new HashMap<>(data);
+        persistable.values().removeIf(v -> v instanceof BiConsumer);
+        return GSON.toJson(persistable);
+    }
+
+    /**
      * 落库一次节点执行（入参/出参/当前 state）；sink 未装配时静默跳过，不阻断主流程。
      *
      * @param output 出参 state 增量，ERROR 时传 null
@@ -207,20 +222,20 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         if (sink == null) {
             return;
         }
-        String outputJson = new Gson().toJson(output);
-
+        String outputJson = toJson(output);
+        String stateJson = toJson(merge(state.data(), output));
         sink.record(new NodeExecutionRecord(state.getTaskId(), nodeName, phase,
-                inputJson, outputJson, new Gson().toJson(state.data()),  errorMsg, costMs));
+                inputJson, outputJson, stateJson, errorMsg, costMs));
     }
 
-//    /** 执行后 state = 入参 merge 出参（ERROR 时 output=null → 等于入参） */
-//    private static Map<String, Object> merge(Map<String, Object> base, Map<String, Object> delta) {
-//        Map<String, Object> merged = new HashMap<>(base);
-//        if (delta != null) {
-//            merged.putAll(delta);
-//        }
-//        return merged;
-//    }
+    /** 执行后 state = 入参 merge 出参（ERROR 时 output=null → 等于入参） */
+    private static Map<String, Object> merge(Map<String, Object> base, Map<String, Object> delta) {
+        Map<String, Object> merged = new HashMap<>(base);
+        if (delta != null) {
+            merged.putAll(delta);
+        }
+        return merged;
+    }
 
     /**
      * 向用户输出进度通知（带图标前缀 + 换行）
