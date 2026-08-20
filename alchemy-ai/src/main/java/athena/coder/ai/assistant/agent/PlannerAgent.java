@@ -53,16 +53,16 @@ public interface PlannerAgent {
               "designBlueprint": {
                 "planId": "plan_YYYYMMDD_HHMMSS",
                 "objective": "一句话目标",
-                "contextSummary": "背景上下文",
+                "contextSummary": "背景上下文（Markdown，可用列表/多行组织）",
                 "tasks": [{
                   "taskId": 1,
                   "title": "任务标题",
-                  "description": "可执行描述（含方法签名、逻辑要点）",
+                  "description": "可执行描述（Markdown，含方法签名、逻辑要点，可用列表/代码块）",
                   "targetFiles": ["src/main/java/.../File.java"],
                   "action": "CREATE|MODIFY|DELETE",
                   "dependencies": [],
                   "risk": "LOW|MEDIUM|HIGH",
-                  "implementationNotes": "技术要点"
+                  "implementationNotes": "技术要点（Markdown，可用列表/代码块）"
                 }],
                 "executionGraph": {
                   "totalTasks": 5,
