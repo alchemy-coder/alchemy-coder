@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.node;
 
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.exception.RocAgentException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,8 +24,8 @@ class AbstractAgentNodeTest {
         }
 
         @Override
-        protected String stepLabel() {
-            return "[测试]";
+        protected StepRole stepRole() {
+            return StepRole.TESTER;
         }
     }
 

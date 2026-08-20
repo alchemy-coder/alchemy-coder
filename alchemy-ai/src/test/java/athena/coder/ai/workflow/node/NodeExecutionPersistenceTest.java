@@ -3,6 +3,7 @@ package athena.coder.ai.workflow.node;
 import athena.coder.ai.spi.AgentExecution;
 import athena.coder.ai.spi.AgentExecutionSink;
 import athena.coder.ai.spi.AiInfra;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.ModelEnum;
@@ -51,8 +52,8 @@ class NodeExecutionPersistenceTest {
         }
 
         @Override
-        protected String stepLabel() {
-            return "[测试]";
+        protected StepRole stepRole() {
+            return StepRole.TESTER;
         }
     }
 
@@ -63,8 +64,8 @@ class NodeExecutionPersistenceTest {
         }
 
         @Override
-        protected String stepLabel() {
-            return "[测试]";
+        protected StepRole stepRole() {
+            return StepRole.TESTER;
         }
     }
 

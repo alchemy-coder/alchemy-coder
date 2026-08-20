@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.PlannerAgent;
 import athena.coder.ai.assistant.agent.result.planner.PlanResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -190,8 +191,8 @@ public class PlanNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return "[规划]";
+    protected StepRole stepRole() {
+        return StepRole.PLANNER;
     }
 
     private static void appendField(StringBuilder md, String label, JsonNode bp, String field) {

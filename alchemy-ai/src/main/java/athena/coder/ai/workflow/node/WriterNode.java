@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.GenericWriterAgent;
 import athena.coder.ai.assistant.agent.result.coder.CoderResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.tool.util.GitHelper;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.exception.RocAgentException;
@@ -58,8 +59,8 @@ public class WriterNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return config.stepLabel();
+    protected StepRole stepRole() {
+        return config.stepRole();
     }
 
     @Override
@@ -177,7 +178,7 @@ public class WriterNode extends AbstractAgentNode {
             String scenario,
             String hardConstraint,
             String commitPrefix,
-            String stepLabel,
+            StepRole stepRole,
             String actionVerb,
             String doneMsg,
             String retryVerb,
@@ -189,25 +190,25 @@ public class WriterNode extends AbstractAgentNode {
 
         public static WriterConfig code() {
             return new WriterConfig("编码工作流：编写业务代码", "不要修改测试文件，专注业务代码编写",
-                    "AI-CODER", "[编码]", "执行", "编码完成", "任务",
+                    "AI-CODER", StepRole.CODER, "执行", "编码完成", "任务",
                     FeedbackSource.FIX_STRATEGY, AgentToolPolicy.CODE_WRITER);
         }
 
         public static WriterConfig test() {
             return new WriterConfig("测试补全工作流：补写测试用例", "禁止修改被测业务代码，只能新增或修改测试文件",
-                    "AI-TESTER", "[补测]", "补写测试", "补测完成", "补测任务",
+                    "AI-TESTER", StepRole.TEST_WRITER, "补写测试", "补测完成", "补测任务",
                     FeedbackSource.FIX_STRATEGY, AgentToolPolicy.WRITER);
         }
 
         public static WriterConfig doc() {
             return new WriterConfig("文档工作流：编写文档/注释", "禁止修改逻辑代码，只能修改文档和注释类文件",
-                    "AI-DOCER", "[文档]", "编写文档", "文档编写完成", "文档任务",
+                    "AI-DOCER", StepRole.DOC_WRITER, "编写文档", "文档编写完成", "文档任务",
                     FeedbackSource.REVIEW_FEEDBACK, AgentToolPolicy.DOC_WRITER);
         }
 
         public static WriterConfig fix() {
             return new WriterConfig("缺陷修复工作流：最小改动修复缺陷", "只修不重构，仅修改修复策略指出的位置，禁止顺手优化或补测试",
-                    "AI-FIXER", "[修复]", "修复", "修复完成", "修复任务",
+                    "AI-FIXER", StepRole.FIXER, "修复", "修复完成", "修复任务",
                     FeedbackSource.FIX_STRATEGY, AgentToolPolicy.WRITER);
         }
     }

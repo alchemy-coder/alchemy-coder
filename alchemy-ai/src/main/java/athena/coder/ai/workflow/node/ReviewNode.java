@@ -5,6 +5,7 @@ import athena.coder.ai.assistant.agent.result.reviewer.ReviewerResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.NodeEnum;
 import athena.coder.ai.workflow.entity.ReviewVerdict;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
 
@@ -50,8 +51,8 @@ public class ReviewNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return "[审查]";
+    protected StepRole stepRole() {
+        return StepRole.REVIEWER;
     }
 
     @Override

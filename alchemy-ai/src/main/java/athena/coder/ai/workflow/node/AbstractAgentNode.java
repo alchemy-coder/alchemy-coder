@@ -6,6 +6,7 @@ import athena.coder.ai.spi.AgentExecutionSink;
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.tool.base.ToolInvocationLogger;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.util.ProjectTypeUtil;
 import athena.coder.entity.chat.ChatEnum;
@@ -238,14 +239,13 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
     }
 
     /**
-     * 向用户输出进度通知（带图标前缀 + 换行）
+     * 向用户输出进度通知（带专家身份前缀）
      *
      * @param state 当前工作流状态（用于获取 botResponse consumer）
-     * @param icon  表情图标（如 "📋"、"💻"、"🧪"）
      * @param msg   进度消息文本
      */
-    protected void notifyProgress(WorkflowState state, String icon, String msg) {
-        state.outputBotResponse(icon + " " + msg + "\n", ChatEnum.ROBOT_PROGRESS);
+    protected void notifyProgress(WorkflowState state, String msg) {
+        state.outputBotResponse("【" + stepRole().expert() + "】 " + msg, ChatEnum.ROBOT_PROGRESS);
     }
 
     /**
@@ -262,15 +262,13 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
     /**
      * 启用工具调用进度透出（ThreadLocal 回调）。
      * <p>
-     * 在调用 Agent 前调用，工具每次执行完成后会自动向用户输出进度摘要。
-     * 摘要格式为 "{stepLabel} {自然语言描述}"，如 "[规划] 读取 UserService.java"，
-     * UI 层自动解析为 "【规划专家】 读取 UserService.java"。
+     * 在调用 Agent 前调用，工具每次执行完成后自动向用户输出进度摘要，
+     * 格式为 "{@code 【专家名】 描述}"，如 "【规划专家】 读取 UserService.java"。
      * Agent 调用完成后务必在 finally 块中调用 {@link #disableToolProgress()} 清理。
      */
     protected void enableToolProgress(WorkflowState state) {
-        String label = stepLabel();
         ToolInvocationLogger.setProgressCallback(
-                (summary, toolName) -> notifyProgress(state, label, summary));
+                (summary, toolName) -> notifyProgress(state, summary));
         ToolInvocationLogger.setExecContext(state.getTaskId(), state.getSessionId(), getClass().getSimpleName());
     }
 
@@ -283,12 +281,9 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
     }
 
     /**
-     * 当前节点的步骤标签（如 "[规划]"、"[编码]"），用于工具进度消息前缀。
-     * 子类必须覆写以返回对应标签。
+     * 当前节点的步骤角色（决定进度指示的专家身份），子类必须覆写。
      */
-    protected String stepLabel() {
-        return "";
-    }
+    protected abstract StepRole stepRole();
 
     /**
      * 生成会话 ID，供下游 Agent 在输出中关联（UUID 前8位）
@@ -303,8 +298,7 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
      * @param state 当前工作流状态
      */
     protected void notifyModelCalling(WorkflowState state) {
-        String label = stepLabel();
-        notifyProgress(state, label, "调用大模型...");
+        notifyProgress(state, "调用大模型...");
     }
 
     /**

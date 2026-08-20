@@ -5,6 +5,7 @@ import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntent;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntentResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.gate.HumanGate;
 import athena.coder.entity.chat.ChatEnum;
@@ -89,7 +90,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
 
         // 修改意见直接取用户原文，避免模型提炼造成信息折损
         String feedback = (reply == null || reply.isBlank()) ? DEFAULT_FEEDBACK : reply;
-        notifyProgress(state, stepLabel(), "用户拒绝计划，将按修改意见重新规划...");
+        notifyProgress(state, "用户拒绝计划，将按修改意见重新规划...");
 
         Map<String, Object> ret = new HashMap<>();
         ret.put(PLAN_FEEDBACK, feedback);
@@ -137,8 +138,8 @@ public class PlanConfirmNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return "[确认]";
+    protected StepRole stepRole() {
+        return StepRole.PLANNER;
     }
 
 }

@@ -3,6 +3,7 @@ package athena.coder.ai.workflow.node;
 import athena.coder.ai.assistant.agent.ReportAgent;
 import athena.coder.ai.assistant.agent.result.summarizer.SummarizerResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
 
@@ -48,8 +49,8 @@ public class ReportNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return "[报告]";
+    protected StepRole stepRole() {
+        return StepRole.REPORTER;
     }
 
     @Override

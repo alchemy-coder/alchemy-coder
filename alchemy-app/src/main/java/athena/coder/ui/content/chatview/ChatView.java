@@ -67,25 +67,6 @@ public class ChatView {
     private static final double VIRTUALIZE_BUFFER_PX = 1500;
     private static final double DEFAULT_PLACEHOLDER_HEIGHT = 100;
 
-    private static final Map<String, String> STEP_EXPERT_MAP = Map.ofEntries(
-            Map.entry("[用户]", "用户专家"),
-            Map.entry("[路由]", "路由专家"),
-            Map.entry("[规划]", "规划专家"),
-            Map.entry("[确认]", "规划专家"),
-            Map.entry("[编码]", "编码专家"),
-            Map.entry("[补测]", "补测专家"),
-            Map.entry("[文档]", "文档专家"),
-            Map.entry("[修复]", "修复专家"),
-            Map.entry("[测试]", "测试专家"),
-            Map.entry("[执行]", "测试专家"),
-            Map.entry("[验证]", "测试专家"),
-            Map.entry("[调试]", "调试专家"),
-            Map.entry("[分析]", "调试专家"),
-            Map.entry("[审查]", "审查专家"),
-            Map.entry("[报告]", "报告专家"),
-            Map.entry("[思考]", "")
-    );
-
     private static volatile Ctx ctx;
 
     /** 卡片 CSS 类名：msg-card 为底板 + 类型修饰符控制顶部色带颜色。 */
@@ -218,40 +199,18 @@ public class ChatView {
         c.vBox.getChildren().remove(c.loadingHBox);
         c.loadingHBox = null;
         c.loadingLabel = null;
-        c.currentExpert = null;
     }
 
-    /** 根据步骤/工具标签更新 loading 文字，并追加进度小卡片。 */
+    /** 更新 loading 文字并追加进度小卡片；内容由 ai 层以「【专家名】 描述」形式直出，此处纯展示。 */
     public static void updateLoadingStep(String content) {
         Ctx c = ctx;
         if (c == null || c.loadingLabel == null || content == null || content.isBlank()) return;
 
-        // 1. 步骤标签：格式 "[标签] [可选描述]"，更新专家并展示后续文本
-        for (String label : STEP_EXPERT_MAP.keySet()) {
-            if (content.startsWith(label)) {
-                String expert = STEP_EXPERT_MAP.get(label);
-                if (expert != null && !expert.isEmpty()) {
-                    c.currentExpert = expert;
-                }
-                String rest = content.substring(label.length()).trim();
-                String prefix = c.currentExpert != null ? "【" + c.currentExpert + "】" : "";
-                String display = rest.isEmpty() ? prefix : prefix + " " + rest;
-                Platform.runLater(() -> {
-                    c.loadingLabel.setText(display);
-                    appendProgressCard(c, display);
-                });
-                return;
-            }
-        }
-
-        // 2. 无标签纯文本（旧格式兼容 + 新格式工具摘要兜底）
-        if (c.currentExpert != null) {
-            String display = "【" + c.currentExpert + "】 " + content.trim();
-            Platform.runLater(() -> {
-                c.loadingLabel.setText(display);
-                appendProgressCard(c, display);
-            });
-        }
+        String display = content.trim();
+        Platform.runLater(() -> {
+            c.loadingLabel.setText(display);
+            appendProgressCard(c, display);
+        });
     }
 
     /** 如果是工具调用（非"调用大模型"），在 loading 上方插入进度小卡片，超过5条时丢弃最早。 */
@@ -732,7 +691,6 @@ public class ChatView {
         final List<ChatDetail> details = new CopyOnWriteArrayList<>();
         VBox loadingHBox;
         Label loadingLabel;
-        String currentExpert;
         HBox confirmBar;
         int lastResultIndex = -1;
         Timeline highlightAnim;

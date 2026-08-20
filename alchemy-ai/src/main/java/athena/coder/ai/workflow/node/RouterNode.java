@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.RouterAgent;
 import athena.coder.ai.assistant.agent.result.router.RouterResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.exception.RocAgentException;
 
@@ -46,7 +47,7 @@ public class RouterNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return "[路由]";
+    protected StepRole stepRole() {
+        return StepRole.ROUTER;
     }
 }

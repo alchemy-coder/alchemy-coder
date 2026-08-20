@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.FixAnalystAgent;
 import athena.coder.ai.assistant.agent.result.debugger.DebuggerResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.NodeEnum;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,8 +52,8 @@ public class AnalystNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return config.stepLabel();
+    protected StepRole stepRole() {
+        return config.stepRole();
     }
 
     @Override
@@ -143,7 +144,7 @@ public class AnalystNode extends AbstractAgentNode {
             String retryRequest,
             String actionVerb,
             String upstreamNoun,
-            String stepLabel,
+            StepRole stepRole,
             String escalateMsg,
             String fixMsgPrefix,
             AgentToolPolicy policy) {
@@ -153,7 +154,7 @@ public class AnalystNode extends AbstractAgentNode {
                     "编码工作流：新功能测试失败，定位业务代码根因（区分实现缺陷与测试覆盖不足）并制定修复策略",
                     "请对测试失败进行根因分析并制定修复策略",
                     "请重新进行调试分析。注意：上次调用失败，请严格按JSON格式输出修复策略。",
-                    "调试分析", "编码", "[调试]",
+                    "调试分析", "编码", StepRole.ANALYST,
                     "问题复杂，需要人工介入", "已定位根因，准备修复",
                     AgentToolPolicy.ANALYST);
         }
@@ -163,7 +164,7 @@ public class AnalystNode extends AbstractAgentNode {
                     "测试补全工作流：新补写测试失败，区分'测试写错'与'被测代码有bug'，定位根因并制定修复策略",
                     "请对新测试失败进行根因分析并制定修复策略",
                     "请重新进行失败分析。注意：上次调用失败，请严格按JSON格式输出修复策略。",
-                    "失败分析", "补测", "[分析]",
+                    "失败分析", "补测", StepRole.ANALYST,
                     "问题复杂或疑似业务代码缺陷，需要人工介入", "已定位根因，准备修复测试",
                     AgentToolPolicy.ANALYST);
         }
@@ -173,7 +174,7 @@ public class AnalystNode extends AbstractAgentNode {
                     "缺陷修复工作流：回归验证失败，分析当前修复为何未生效并制定新的修复策略（重点防重复修复）",
                     "请对回归验证失败进行根因分析并制定新的修复策略",
                     "请重新进行根因分析。注意：上次调用失败，请严格按JSON格式输出修复策略。",
-                    "根因分析", "修复", "[分析]",
+                    "根因分析", "修复", StepRole.ANALYST,
                     "问题复杂，需要人工介入", "已定位根因，准备修复",
                     AgentToolPolicy.ANALYST);
         }

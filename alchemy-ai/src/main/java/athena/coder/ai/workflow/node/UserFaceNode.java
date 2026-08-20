@@ -5,6 +5,7 @@ import athena.coder.ai.assistant.agent.result.user.UserFaceMode;
 import athena.coder.ai.assistant.agent.result.user.UserFaceResult;
 import athena.coder.ai.rag.RagManager;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.entity.chat.ChatEnum;
@@ -59,7 +60,7 @@ public class UserFaceNode extends AbstractAgentNode {
     }
 
     @Override
-    protected String stepLabel() {
-        return "[用户]";
+    protected StepRole stepRole() {
+        return StepRole.USER;
     }
 }
