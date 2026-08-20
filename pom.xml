@@ -34,7 +34,7 @@
                     <configuration>
                         <parameters>true</parameters>
                         <compilerArgs>
-                            <arg>--add-opens</arg>
+                            <arg>--add-exports</arg>
                             <arg>com.google.gson/com.google.gson.internal=ALL-UNNAMED</arg>
                         </compilerArgs>
                     </configuration>
