@@ -64,7 +64,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
             reply = HumanGate.await(taskId);
         } catch (RocAgentException e) {
             // 确认超时/等待中断：门已在 finally 清理，用户后续消息走新工作流
-            state.outputBotResponse("⏰ 执行计划确认超时，本次流程结束。如需继续，请重新发送消息。", ChatEnum.ROBOT);
+            state.outputBotResponse("执行计划确认超时，本次流程结束。如需继续，请重新发送消息。", ChatEnum.ROBOT);
             return Map.of(NEXT_NODE, END);
         } finally {
             HumanGate.remove(taskId);
@@ -75,7 +75,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
         if (intentResult.intent() == ConfirmIntent.CONFIRM) {
             // WORKFLOW_MODE 由 ROUTER 节点写入并校验非空（失败则抛异常终止流程，不会到达本节点）
             WorkflowMode mode = ctx.requireWorkflowMode();
-            state.outputBotResponse("✅ 计划已确认，进入" + mode.label() + "开始执行...", ChatEnum.ROBOT);
+            state.outputBotResponse("计划已确认，进入" + mode.label() + "开始执行...", ChatEnum.ROBOT);
             // WorkflowMode 与 NodeEnum 子工作流枚举同名，name() 即主图路由信号，零映射
             return Map.of(NEXT_NODE, mode.name());
         }
@@ -83,7 +83,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
         // 拒绝：回环计数熔断
         int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
         if (count > MAX_REPLAN_COUNT) {
-            state.outputBotResponse("⚠️ 已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
+            state.outputBotResponse("已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
             return Map.of(NEXT_NODE, END);
         }
 
