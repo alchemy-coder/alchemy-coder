@@ -134,11 +134,7 @@ public abstract class AbstractBaseTool {
             ErrorLogger.warn(getToolName() + "." + operationName, "参数错误: " + e.getMessage());
             throw e;
 
-        } catch (ToolSecurityException e) {
-            ErrorLogger.log(getToolName() + "." + operationName, e);
-            throw e;
-
-        } catch (ToolExecutionException e) {
+        } catch (ToolSecurityException | ToolExecutionException e) {
             ErrorLogger.log(getToolName() + "." + operationName, e);
             throw e;
 
