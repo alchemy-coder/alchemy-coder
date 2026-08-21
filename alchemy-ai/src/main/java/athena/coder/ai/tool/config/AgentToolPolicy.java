@@ -20,6 +20,7 @@ import java.util.Set;
  * |---------------|-------------------------------------|-----------------------------|
  * | ROUTER        | 无工具（纯 LLM 推理）                | RouterNode                  |
  * | CONFIRM_INTENT| 无工具（纯 LLM 推理）                | PlanConfirmNode             |
+ * | CLARIFIER     | 只读                                | PlanConfirmNode（CLARIFY 分支）|
  * | USER_FACE     | 只读 + 终端 + git 只读              | UserFaceNode                |
  * | PLANNER       | 只读                                | PlanNode                    |
  * | CODE_WRITER   | 全量写（含安全扫描）                | 编码工作流写角色            |
@@ -54,6 +55,9 @@ public enum AgentToolPolicy {
     ROUTER,
 
     CONFIRM_INTENT,
+
+    CLARIFIER(
+            ToolCategory.READ_ONLY),
 
     USER_FACE(
             ToolCategory.READ_ONLY,

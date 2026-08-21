@@ -14,9 +14,10 @@ class ConfirmIntentTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    void fromString_threeCategories() {
+    void fromString_fourCategories() {
         assertEquals(ConfirmIntent.CONFIRM, ConfirmIntent.fromString("CONFIRM"));
         assertEquals(ConfirmIntent.REVISE, ConfirmIntent.fromString("REVISE"));
+        assertEquals(ConfirmIntent.CLARIFY, ConfirmIntent.fromString("CLARIFY"));
         assertEquals(ConfirmIntent.REJECT, ConfirmIntent.fromString("REJECT"));
     }
 
@@ -26,6 +27,9 @@ class ConfirmIntentTest {
         assertEquals(ConfirmIntent.CONFIRM, ConfirmIntent.fromString("同意"));
         assertEquals(ConfirmIntent.REVISE, ConfirmIntent.fromString("modify"));
         assertEquals(ConfirmIntent.REVISE, ConfirmIntent.fromString("修改"));
+        assertEquals(ConfirmIntent.CLARIFY, ConfirmIntent.fromString("ask"));
+        assertEquals(ConfirmIntent.CLARIFY, ConfirmIntent.fromString("询问"));
+        assertEquals(ConfirmIntent.CLARIFY, ConfirmIntent.fromString("为什么"));
         assertEquals(ConfirmIntent.REJECT, ConfirmIntent.fromString("CANCEL"));
         assertEquals(ConfirmIntent.REJECT, ConfirmIntent.fromString("取消"));
     }
@@ -68,5 +72,22 @@ class ConfirmIntentTest {
         ConfirmIntentResult r = new ConfirmIntentResult(ConfirmIntent.REJECT);
         assertEquals(ConfirmIntent.REJECT, r.intent());
         assertNull(r.revise());
+    }
+
+    @Test
+    void deserialize_clarifyIntentWithoutRevise() throws Exception {
+        ConfirmIntentResult r = mapper.readValue("{\"intent\":\"CLARIFY\"}", ConfirmIntentResult.class);
+        assertEquals(ConfirmIntent.CLARIFY, r.intent());
+        assertNull(r.revise());
+    }
+
+    @Test
+    void deserialize_clarifyResult() throws Exception {
+        String json = """
+                {"answer":"任务3的存储用文件，避免引入外部依赖","suggestion":"确认执行即可"}
+                """;
+        ClarifyResult r = mapper.readValue(json, ClarifyResult.class);
+        assertEquals("任务3的存储用文件，避免引入外部依赖", r.answer());
+        assertEquals("确认执行即可", r.suggestion());
     }
 }

@@ -1,6 +1,8 @@
 package athena.coder.ai.workflow.node;
 
+import athena.coder.ai.assistant.agent.ClarifyAgent;
 import athena.coder.ai.assistant.agent.ConfirmIntentAgent;
+import athena.coder.ai.assistant.agent.result.confirm.ClarifyResult;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntent;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntentResult;
 import athena.coder.ai.assistant.agent.result.confirm.Revise;
@@ -28,11 +30,12 @@ import static org.bsc.langgraph4j.GraphDefinition.END;
  * <p>
  * 负责：
  * 1. 输出确认提示，通过 {@link HumanGate} 阻塞等待用户回复（默认 30 分钟超时，超时终止流程）
- * 2. 调 ConfirmIntentAgent 判定回复意图（确认/提修改意见/拒绝取消），模型失败时降级为关键词规则兜底
+ * 2. 调 ConfirmIntentAgent 判定回复意图（确认/提修改意见/追问答疑/拒绝取消），模型失败时降级为关键词规则兜底
  * 3. 确认 → 按 WORKFLOW_MODE 分流到对应子工作流节点（枚举名与 NodeEnum 同名，信号零映射；
  *    mode 由 ROUTER 节点校验保证非空，此处直接取用）
  * 4. 提修改意见 → 结构化修订指令 + 原文双存写入 PLAN_FEEDBACK，回到 PLANNER 重新规划（带回环熔断）
- * 5. 拒绝取消 → 提示已取消，直接 END
+ * 5. 追问答疑 → 调 ClarifyAgent 先作答，再重发确认卡片等待用户决定（局部熔断）
+ * 6. 拒绝取消 → 提示已取消，直接 END
  */
 public class PlanConfirmNode extends AbstractAgentNode {
 
@@ -40,6 +43,11 @@ public class PlanConfirmNode extends AbstractAgentNode {
      * 拒绝重规划熔断上限
      */
     private static final int MAX_REPLAN_COUNT = 3;
+
+    /**
+     * 单次确认环节追问答疑熔断上限（超出后终止流程）
+     */
+    private static final int MAX_CLARIFY_COUNT = 3;
 
     private static final Set<String> CONFIRM_WORDS = Set.of(
             "确认", "确认执行", "同意", "执行", "继续", "开始执行", "没问题",
@@ -54,8 +62,70 @@ public class PlanConfirmNode extends AbstractAgentNode {
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
         Long taskId = state.getTaskId();
+        outputConfirmCard(state);
 
-        // 用确认卡片类型输出：独立醒目样式；且与 PLANNER 的 ROBOT_RESULT 计划内容不同 type，upsert 不会互相覆盖
+        int clarifyCount = 0;
+        while (true) {
+            String reply;
+            try {
+                reply = HumanGate.await(taskId);
+            } catch (RocAgentException e) {
+                // 确认超时/等待中断：门已在 finally 清理，用户后续消息走新工作流
+                state.outputBotResponse("执行计划确认超时，本次流程结束。如需继续，请重新发送消息。", ChatEnum.ROBOT);
+                return Map.of(NEXT_NODE, END);
+            } finally {
+                HumanGate.remove(taskId);
+            }
+
+            ConfirmIntentResult intentResult = classifyReply(state, ctx, reply);
+
+            switch (intentResult.intent()) {
+                case CONFIRM -> {
+                    // WORKFLOW_MODE 由 ROUTER 节点写入并校验非空（失败则抛异常终止流程，不会到达本节点）
+                    WorkflowMode mode = ctx.requireWorkflowMode();
+                    state.outputBotResponse("计划已确认，进入" + mode.label() + "开始执行...", ChatEnum.ROBOT);
+                    // WorkflowMode 与 NodeEnum 子工作流枚举同名，name() 即主图路由信号，零映射
+                    return Map.of(NEXT_NODE, mode.name());
+                }
+                case REJECT -> {
+                    state.outputBotResponse("已取消本次规划。如需继续，请重新发送您的需求。", ChatEnum.ROBOT);
+                    return Map.of(NEXT_NODE, END);
+                }
+                case REVISE -> {
+                    // 提修改意见：结构化修订指令 + 原文双存，回 PLANNER 重规划（带回环熔断）
+                    int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
+                    if (count > MAX_REPLAN_COUNT) {
+                        state.outputBotResponse("已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
+                        return Map.of(NEXT_NODE, END);
+                    }
+                    String feedback = buildReplanFeedback(reply, intentResult.revise());
+                    notifyProgress(state, "已识别修改意见，将按意见重新规划...");
+
+                    Map<String, Object> ret = new HashMap<>();
+                    ret.put(PLAN_FEEDBACK, feedback);
+                    ret.put(PLAN_CONFIRM_COUNT, count);
+                    ret.put(NEXT_NODE, PLANNER.name());
+                    return ret;
+                }
+                case CLARIFY -> {
+                    // 追问答疑：先作答，再重发确认卡片等待用户决定（局部熔断）
+                    clarifyCount++;
+                    if (clarifyCount > MAX_CLARIFY_COUNT) {
+                        state.outputBotResponse("已达到追问答疑次数上限（" + MAX_CLARIFY_COUNT + " 次），本次流程终止。如需继续，请重新发送您的需求。", ChatEnum.ROBOT);
+                        return Map.of(NEXT_NODE, END);
+                    }
+                    ClarifyResult clarify = clarifyReply(state, ctx, reply);
+                    state.outputBotResponse(clarify.answer(), ChatEnum.ROBOT);
+                    outputConfirmCard(state);
+                }
+            }
+        }
+    }
+
+    /**
+     * 输出确认卡片：独立醒目样式；且与 PLANNER 的 ROBOT_RESULT 计划内容不同 type，upsert 不会互相覆盖
+     */
+    private void outputConfirmCard(WorkflowState state) {
         state.outputBotResponse("""
                 ## 📋 执行计划已就绪，等待您的确认
 
@@ -63,52 +133,10 @@ public class PlanConfirmNode extends AbstractAgentNode {
 
                 - ✅ 点击下方 **【确认执行】** 按钮（或直接回复 **确认**）—— 立即按计划开始执行
                 - ✏️ 直接回复修改意见 —— 我将按您的意见重新规划
+                - ❓ 对计划有疑问可直接提问 —— 我将先为您解答
 
                 > 💡 意见示例：“任务2的存储方案改为文件存储”、“把任务3拆解得更细一些”\
                 """, ChatEnum.ROBOT_CONFIRM);
-
-        String reply;
-        try {
-            reply = HumanGate.await(taskId);
-        } catch (RocAgentException e) {
-            // 确认超时/等待中断：门已在 finally 清理，用户后续消息走新工作流
-            state.outputBotResponse("执行计划确认超时，本次流程结束。如需继续，请重新发送消息。", ChatEnum.ROBOT);
-            return Map.of(NEXT_NODE, END);
-        } finally {
-            HumanGate.remove(taskId);
-        }
-
-        ConfirmIntentResult intentResult = classifyReply(state, ctx, reply);
-
-        return switch (intentResult.intent()) {
-            case CONFIRM -> {
-                // WORKFLOW_MODE 由 ROUTER 节点写入并校验非空（失败则抛异常终止流程，不会到达本节点）
-                WorkflowMode mode = ctx.requireWorkflowMode();
-                state.outputBotResponse("计划已确认，进入" + mode.label() + "开始执行...", ChatEnum.ROBOT);
-                // WorkflowMode 与 NodeEnum 子工作流枚举同名，name() 即主图路由信号，零映射
-                yield Map.of(NEXT_NODE, mode.name());
-            }
-            case REJECT -> {
-                state.outputBotResponse("已取消本次规划。如需继续，请重新发送您的需求。", ChatEnum.ROBOT);
-                yield Map.of(NEXT_NODE, END);
-            }
-            case REVISE -> {
-                // 提修改意见：结构化修订指令 + 原文双存，回 PLANNER 重规划（带回环熔断）
-                int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
-                if (count > MAX_REPLAN_COUNT) {
-                    state.outputBotResponse("已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
-                    yield Map.of(NEXT_NODE, END);
-                }
-                String feedback = buildReplanFeedback(reply, intentResult.revise());
-                notifyProgress(state, "已识别修改意见，将按意见重新规划...");
-
-                Map<String, Object> ret = new HashMap<>();
-                ret.put(PLAN_FEEDBACK, feedback);
-                ret.put(PLAN_CONFIRM_COUNT, count);
-                ret.put(NEXT_NODE, PLANNER.name());
-                yield ret;
-            }
-        };
     }
 
     /**
@@ -132,6 +160,29 @@ public class PlanConfirmNode extends AbstractAgentNode {
                     call, null);
         } catch (Exception e) {
             return fallbackClassify(reply);
+        }
+    }
+
+    /**
+     * 调用 ClarifyAgent 回答用户疑问；模型失败时返回通用兜底话术（不阻断确认流程）
+     */
+    private ClarifyResult clarifyReply(WorkflowState state, NodeContext ctx, String question) throws Exception {
+        notifyModelCalling(state);
+        ClarifyAgent agent = newChatAssistant(ctx.modelType(), ClarifyAgent.class, AgentToolPolicy.CLARIFIER);
+        String planSummary = requireUpstream(state.getStringValue(PLAN), "PLAN 缺失，无法进行答疑");
+        AgentCall<ClarifyResult> call = request -> {
+            ClarifyResult r = agent.clarify(ctx.taskId(), request, planSummary);
+            if (r == null || r.answer() == null || r.answer().isBlank()) {
+                throw new Exception("ClarifyAgent 返回结果不完整（answer为空）");
+            }
+            return r;
+        };
+        try {
+            return callAgentWithRetry(question,
+                    "你上次的输出格式不正确，请重新回答问题并严格按JSON格式输出。用户疑问: " + question,
+                    call, null);
+        } catch (Exception e) {
+            return new ClarifyResult("抱歉，我暂时无法准确回答这个问题。您可以换一种方式描述，或直接回复【确认】继续执行、回复修改意见让我重新规划。", null);
         }
     }
 
