@@ -42,6 +42,7 @@ public interface PlannerAgent {
             2. 原子化拆解任务（SMART原则：具体、可度量、单次完成、关联目标、有时限）
             3. 标记依赖关系与并行组（编译依赖/逻辑依赖/数据依赖 → criticalPath + parallelGroups）
             4. 评估风险等级（HIGH→必须回滚方案，MEDIUM→必须列受影响文件）
+            5. 产出 projectFacts：把探索到的关键事实结构化（只列关键文件与符号，≤30 文件、每文件 ≤3 符号，宁缺毋滥），供下游 Agent 复用、减少重复探索
 
             ## 工作模式适配
             - CODE: 架构设计、代码组织、可测试性
@@ -77,7 +78,14 @@ public interface PlannerAgent {
                 }],
                 "estimatedComplexity": "SIMPLE|MODERATE|COMPLEX"
               },
-              "acceptanceCriteria": "按任务分组的验收点，每条≤100字符，含正常+异常+边界场景"
+              "acceptanceCriteria": "按任务分组的验收点，每条≤100字符，含正常+异常+边界场景",
+              "projectFacts": {
+                "overview": "一句话项目概览（技术栈/入口/模块）",
+                "modules": [{ "name": "模块名", "path": "相对路径", "role": "职责" }],
+                "files": [{ "path": "src/.../X.java", "role": "职责", "keySymbols": ["class X", "void y()"] }],
+                "dependencies": ["A → B"],
+                "gotchas": ["注意点"]
+              }
             }
             """)
     PlanResult plan(@MemoryId long memoryId,

@@ -1,7 +1,5 @@
 package athena.coder.ai.assistant.model.factory;
 
-import athena.coder.ai.assistant.agent.PlannerAgent;
-import athena.coder.ai.assistant.agent.UserFaceAssistant;
 import athena.coder.ai.assistant.model.ByteCountEstimator;
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.tool.ToolRegistry;
@@ -50,8 +48,9 @@ public final class AiAssistantFactory {
                     // 否则 TokenWindowChatMemory 默认使用 InMemoryChatMemoryStore
                     return memoryBuilder.build();
                 });
-        // 入口分流与规划需要项目知识增强；RAG 不可用时 retriever 静默返回空
-        if (agentClass == UserFaceAssistant.class || agentClass == PlannerAgent.class) {
+        // 所有带工具类别的角色都接入项目知识增强（RAG）；无工具角色（ROUTER/CONFIRM_INTENT）不接入
+        // RAG 不可用时 retriever 静默返回空
+        if (!policy.categories().isEmpty()) {
             String projectPath = AiInfra.projectPath();
             EmbeddingModel embeddingModel = AiInfra.modelProvider().embeddingModel();
             EmbeddingStore<TextSegment> store = AiInfra.modelProvider().embeddingStore(ProjectKeyUtil.projectKey(projectPath));

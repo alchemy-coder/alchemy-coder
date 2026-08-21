@@ -96,6 +96,15 @@ class WorkflowStateTest {
         assertEquals(ChatEnum.ROBOT_PROGRESS, type.get());
     }
 
+    @Test
+    void projectFacts_absentThenPresent() {
+        WorkflowState absent = new WorkflowState(base());
+        assertNull(absent.getStringValue(WorkflowState.PROJECT_FACTS));
+
+        String json = "{\"overview\":\"单体项目\"}";
+        assertEquals(json, stateWith(WorkflowState.PROJECT_FACTS, json).getStringValue(WorkflowState.PROJECT_FACTS));
+    }
+
     private static WorkflowState stateWith(String key, Object value) {
         Map<String, Object> m = base();
         m.put(key, value);

@@ -8,6 +8,7 @@ import dev.langchain4j.service.V;
 import static athena.coder.ai.assistant.agent.PromptFragments.CODER_SCHEMA;
 import static athena.coder.ai.assistant.agent.PromptFragments.ENV_LINE;
 import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+import static athena.coder.ai.assistant.agent.PromptFragments.PROJECT_FACTS_BLOCK;
 
 /**
  * 通用受约束编写智能体（合并原 TestWriteAgent / DocWriteAgent）
@@ -30,16 +31,19 @@ public interface GenericWriterAgent {
             {{hardConstraint}}
 
             ## 核心原则
-            1. **先读后写** - 动笔前先读相关源码，断言/描述必须基于真实行为与接口签名，禁止臆造
-            2. **风格一致** - 沿用项目既有目录结构、命名风格与排版习惯
-            3. **Tool操作文件** - 所有变更通过 `editFile/writeFile` 完成，禁止在回复中写代码/正文
-            4. **每次变更后验证** - `getCompilationDiagnostics` 确认编译通过
-            5. **记录完整** - changedFiles 必须与实际变更一致，漏报导致下游漏测
+            1. **优先采信项目知识上下文** - facts 里已有的文件路径与符号直接采用，勿重复 readFile 全文；仅缺失时才用工具探测
+            2. **先读后写** - 动笔前先读相关源码，断言/描述必须基于真实行为与接口签名，禁止臆造
+            3. **风格一致** - 沿用项目既有目录结构、命名风格与排版习惯
+            4. **Tool操作文件** - 所有变更通过 `editFile/writeFile` 完成，禁止在回复中写代码/正文
+            5. **每次变更后验证** - `getCompilationDiagnostics` 确认编译通过
+            6. **记录完整** - changedFiles 必须与实际变更一致，漏报导致下游漏测
             """)
-    CoderResult write(@UserMessage String taskDescription,
+    CoderResult write(@UserMessage("{{taskDescription}}" + PROJECT_FACTS_BLOCK)
+                      @V("taskDescription") String taskDescription,
                       @V("workDir") String workDir,
                       @V("projectType") String projectType,
                       @V("curDate") String curDate,
                       @V("scenario") String scenario,
-                      @V("hardConstraint") String hardConstraint);
+                      @V("hardConstraint") String hardConstraint,
+                      @V("projectFacts") String projectFacts);
 }

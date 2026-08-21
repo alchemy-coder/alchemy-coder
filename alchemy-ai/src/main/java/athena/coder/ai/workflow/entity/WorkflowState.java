@@ -34,6 +34,12 @@ public class WorkflowState extends AgentState {
     public final static String PLAN = "PLAN";
 
     /**
+     * 规划阶段产出的项目探索事实（JSON 字符串），单一写者 PLANNER，下游节点只读。
+     * 缺失/为空时下游降级为自行探索，不阻断流程。
+     */
+    public final static String PROJECT_FACTS = "projectFacts";
+
+    /**
      * CODER 变更的文件列表（逗号分隔）
      */
     public final static String CHANGED_FILES = "changedFiles";

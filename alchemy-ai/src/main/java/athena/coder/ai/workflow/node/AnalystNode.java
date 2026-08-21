@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.FixAnalystAgent;
 import athena.coder.ai.assistant.agent.result.debugger.DebuggerResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.NodeEnum;
+import athena.coder.ai.workflow.entity.ProjectFacts;
 import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
@@ -67,6 +68,7 @@ public class AnalystNode extends AbstractAgentNode {
         String acceptanceCriteria = requireUpstream(state.getStringValue(ACCEPTANCE_CRITERIA),
                 "acceptanceCriteria 为空，缺少验收标准");
         String previousFixes = state.getStringValue(PREVIOUS_FIXES);
+        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
 
         notifyModelCalling(state);
 
@@ -75,7 +77,7 @@ public class AnalystNode extends AbstractAgentNode {
                 ctx.taskId(), request, ctx.projectPath(), ctx.projectType(),
                 LocalDate.now().format(DATE_FMT), sessionId(), config.scenario(),
                 testResult, changedFiles, changedDiffRef, acceptanceCriteria,
-                previousFixes != null ? previousFixes : "");
+                previousFixes != null ? previousFixes : "", projectFacts);
 
         DebuggerResult debugResult = callAgentWithRetry(config.request(), config.retryRequest(), call, null);
 

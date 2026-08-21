@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.GenericWriterAgent;
 import athena.coder.ai.assistant.agent.result.coder.CoderResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.tool.util.GitHelper;
+import athena.coder.ai.workflow.entity.ProjectFacts;
 import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
@@ -71,11 +72,12 @@ public class WriterNode extends AbstractAgentNode {
         notifyModelCalling(state);
 
         String taskDescription = assembleTaskDescription(state);
+        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
 
         GenericWriterAgent assistant = newChatAssistant(ctx.modelType(), GenericWriterAgent.class, config.policy());
         GitHelper.IsolationResult<CoderResult> isolation = GitHelper.isolateAndCommit(
                 ctx.projectPath(), config.commitPrefix() + ": task-" + ctx.taskId(),
-                () -> invokeWithRetry(assistant, ctx, taskDescription));
+                () -> invokeWithRetry(assistant, ctx, taskDescription, projectFacts));
         CoderResult coderResult = isolation.workResult();
 
         String changedFiles = coderResult.changedFilesAsCsv();
@@ -136,10 +138,10 @@ public class WriterNode extends AbstractAgentNode {
      * 隔离期内调用 Agent：首调失败 → 清理 AI 工作区 → 带纠错指令重试一次；
      * 重试仍失败时上抛，由 {@link GitHelper#isolateAndCommit} 统一完成清理与用户改动恢复
      */
-    private CoderResult invokeWithRetry(GenericWriterAgent assistant, NodeContext ctx, String taskDescription) throws Exception {
+    private CoderResult invokeWithRetry(GenericWriterAgent assistant, NodeContext ctx, String taskDescription, String projectFacts) throws Exception {
         try {
             return assistant.write(taskDescription, ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
-                    config.scenario(), config.hardConstraint());
+                    config.scenario(), config.hardConstraint(), projectFacts);
         } catch (Exception e) {
             ErrorLogger.log(getClass().getSimpleName(), e, ctx.taskId(), "GenericWriterAgent", null);
             GitHelper.cleanAiWorkspace(ctx.projectPath());
@@ -147,7 +149,7 @@ public class WriterNode extends AbstractAgentNode {
                 return assistant.write(
                         "你上次的输出不正确，请重新执行" + config.retryVerb() + "并按JSON格式输出。任务描述: " + taskDescription,
                         ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
-                        config.scenario(), config.hardConstraint());
+                        config.scenario(), config.hardConstraint(), projectFacts);
             } catch (Exception retryEx) {
                 throw new RocAgentException("GenericWriterAgent 调用失败: " + retryEx.getMessage(), retryEx);
             }

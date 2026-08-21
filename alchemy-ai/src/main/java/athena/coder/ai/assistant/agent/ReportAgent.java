@@ -8,6 +8,7 @@ import dev.langchain4j.service.V;
 
 import static athena.coder.ai.assistant.agent.PromptFragments.ENV_LINE;
 import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+import static athena.coder.ai.assistant.agent.PromptFragments.PROJECT_FACTS_BLOCK;
 import static athena.coder.ai.assistant.agent.PromptFragments.REPORT_EVIDENCE;
 import static athena.coder.ai.assistant.agent.PromptFragments.REPORT_SCHEMA;
 
@@ -29,12 +30,13 @@ public interface ReportAgent {
             + REPORT_SCHEMA
             + ENV_LINE + """
             ## 核心原则
-            1. **只读不改** - 只分析和总结，绝对不修改文件
-            2. **基于事实** - 所有结论来自上游节点客观数据，验证未通过时禁止粉饰为已修复
-            3. **规范输出** - Commit Message 遵循 Conventional Commits 规范
+            1. **优先采信项目知识上下文** - facts 里已有的文件路径与符号直接采用，勿重复 readFile 全文；仅缺失时才用工具探测
+            2. **只读不改** - 只分析和总结，绝对不修改文件
+            3. **基于事实** - 所有结论来自上游节点客观数据，验证未通过时禁止粉饰为已修复
+            4. **规范输出** - Commit Message 遵循 Conventional Commits 规范
             """)
     SummarizerResult report(@MemoryId long memoryId,
-                            @UserMessage("{{summarizeRequest}}" + REPORT_EVIDENCE)
+                            @UserMessage("{{summarizeRequest}}" + REPORT_EVIDENCE + PROJECT_FACTS_BLOCK)
                             @V("summarizeRequest") String summarizeRequest,
                             @V("workDir") String workDir,
                             @V("curDate") String curDate,
@@ -46,5 +48,6 @@ public interface ReportAgent {
                             @V("changeSummary") String changeSummary,
                             @V("fixStrategy") String fixStrategy,
                             @V("testResult") String testResult,
-                            @V("reviewResult") String reviewResult);
+                            @V("reviewResult") String reviewResult,
+                            @V("projectFacts") String projectFacts);
 }

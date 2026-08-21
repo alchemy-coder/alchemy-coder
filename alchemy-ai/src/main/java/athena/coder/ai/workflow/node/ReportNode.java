@@ -3,6 +3,7 @@ package athena.coder.ai.workflow.node;
 import athena.coder.ai.assistant.agent.ReportAgent;
 import athena.coder.ai.assistant.agent.result.summarizer.SummarizerResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
+import athena.coder.ai.workflow.entity.ProjectFacts;
 import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
@@ -66,6 +67,7 @@ public class ReportNode extends AbstractAgentNode {
         warnIfBlank(originalRequirement, "originalRequirement 为空，将无法核对完成度");
 
         String changeSummary = buildChangeSummary(changedFiles, changedDiffRef);
+        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
 
         notifyModelCalling(state);
 
@@ -73,7 +75,8 @@ public class ReportNode extends AbstractAgentNode {
         AgentCall<SummarizerResult> call = request -> assistant.report(
                 ctx.taskId(), request, ctx.projectPath(), LocalDate.now().format(DATE_FMT),
                 sessionId(), config.commitType(), config.branchPrefix(), config.scenario(),
-                orEmpty(originalRequirement), changeSummary, orEmpty(fixStrategy), orEmpty(testResult), orEmpty(reviewResult));
+                orEmpty(originalRequirement), changeSummary, orEmpty(fixStrategy), orEmpty(testResult), orEmpty(reviewResult),
+                projectFacts);
 
         SummarizerResult summarizeResult = callAgentWithRetry(config.request(), config.retryRequest(), call, null);
 

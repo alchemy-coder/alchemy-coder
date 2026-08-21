@@ -105,6 +105,13 @@ public final class PromptFragments {
 
     // ===== 证据块（追加在 @UserMessage 模板末尾，{{xxx}} 与 @V 参数一一对应）=====
 
+    /** 项目知识上下文（规划阶段已探索，优先采信，缺失才用工具探测） */
+    public static final String PROJECT_FACTS_BLOCK = """
+
+            ## 项目知识上下文（规划阶段已探索，优先采信，缺失才用工具探测）
+            {{projectFacts}}
+            """;
+
     /** 收尾报告依据（整合需求/变更/修复/测试/审查五类上游证据） */
     public static final String REPORT_EVIDENCE = """
 

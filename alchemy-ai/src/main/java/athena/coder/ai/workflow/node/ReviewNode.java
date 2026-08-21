@@ -5,6 +5,7 @@ import athena.coder.ai.assistant.agent.result.reviewer.ReviewerResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.NodeEnum;
 import athena.coder.ai.workflow.entity.ReviewVerdict;
+import athena.coder.ai.workflow.entity.ProjectFacts;
 import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.spi.ErrorLogger;
@@ -71,6 +72,7 @@ public class ReviewNode extends AbstractAgentNode {
         warnIfBlank(acceptanceCriteria, "acceptanceCriteria 为空，将跳过验收标准核对");
 
         String changeSummary = buildChangeSummary(changedFiles, changedDiffRef);
+        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
 
         notifyModelCalling(state);
 
@@ -78,7 +80,7 @@ public class ReviewNode extends AbstractAgentNode {
         AgentCall<ReviewerResult> call = request -> assistant.review(
                 request, ctx.projectPath(), ctx.projectType(), LocalDate.now().format(DATE_FMT),
                 sessionId(), config.scenario(), config.stageResults(),
-                originalRequirement, changeSummary, testResult, acceptanceCriteria);
+                originalRequirement, changeSummary, testResult, acceptanceCriteria, projectFacts);
 
         ReviewerResult reviewResult = callAgentWithRetry(config.request(), config.retryRequest(), call, null);
 

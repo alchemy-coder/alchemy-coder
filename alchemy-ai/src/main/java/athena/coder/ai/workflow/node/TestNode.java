@@ -4,6 +4,7 @@ import athena.coder.ai.assistant.agent.TestExecutorAgent;
 import athena.coder.ai.assistant.agent.result.tester.TesterResult;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.NodeEnum;
+import athena.coder.ai.workflow.entity.ProjectFacts;
 import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.TesterStatus;
 import athena.coder.ai.workflow.entity.WorkflowState;
@@ -57,6 +58,7 @@ public class TestNode extends AbstractAgentNode {
                 "changedDiffRef 为空，无法查看变更详情（需要" + config.upstreamNoun() + "环节先提交代码）");
         String acceptanceCriteria = requireUpstream(state.getStringValue(ACCEPTANCE_CRITERIA),
                 "acceptanceCriteria 为空，缺少验收标准（需要主图规划环节先生成执行计划）");
+        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
 
         notifyModelCalling(state);
 
@@ -64,7 +66,7 @@ public class TestNode extends AbstractAgentNode {
         AgentCall<TesterResult> call = request -> assistant.test(
                 ctx.taskId(), request, ctx.projectPath(), ctx.projectType(),
                 LocalDate.now().format(DATE_FMT), config.scenario(),
-                changedFiles, changedDiffRef, acceptanceCriteria);
+                changedFiles, changedDiffRef, acceptanceCriteria, projectFacts);
 
         TesterResult testResult = callAgentWithRetry(config.request(), config.retryRequest(), call, null);
 

@@ -53,6 +53,14 @@ public class PlanNode extends AbstractAgentNode {
         String designBlueprint = blueprintNode.toString();
         String acceptanceCriteria = result.acceptanceCriteria();
 
+        // 项目探索事实：单一写者（PLANNER），下游节点只读；缺失时降级为空对象，下游自行探索
+        JsonNode factsNode = result.projectFacts();
+        if (factsNode == null || factsNode.isNull() || factsNode.isEmpty()) {
+            warnIfBlank(null, "PlannerAgent 未输出 projectFacts，下游将自行探索");
+            factsNode = MAPPER.createObjectNode();
+        }
+        String projectFacts = factsNode.toString();
+
         // 第二层：输出结构化执行计划给用户（JSON → Markdown 表格）
         String planMarkdown = blueprintToMarkdown(blueprintNode);
         notifyResult(state, "", planMarkdown);
@@ -60,7 +68,8 @@ public class PlanNode extends AbstractAgentNode {
         // 下一跳为静态边 PLAN_CONFIRM，不写 NEXT_NODE，避免残留信号误导节点完成日志
         return Map.of(
                 PLAN, designBlueprint,
-                ACCEPTANCE_CRITERIA, acceptanceCriteria
+                ACCEPTANCE_CRITERIA, acceptanceCriteria,
+                PROJECT_FACTS, projectFacts
         );
     }
 

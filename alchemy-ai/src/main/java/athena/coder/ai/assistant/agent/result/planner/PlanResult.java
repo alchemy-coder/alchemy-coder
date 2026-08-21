@@ -13,5 +13,5 @@ import athena.coder.ai.assistant.agent.result.MarkdownStrippingDeserializer;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(using = MarkdownStrippingDeserializer.class)
-public record PlanResult(JsonNode designBlueprint, String acceptanceCriteria) {
+public record PlanResult(JsonNode designBlueprint, String acceptanceCriteria, JsonNode projectFacts) {
 }

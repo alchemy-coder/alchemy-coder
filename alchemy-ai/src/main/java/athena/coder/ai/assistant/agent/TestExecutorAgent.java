@@ -8,6 +8,7 @@ import dev.langchain4j.service.V;
 
 import static athena.coder.ai.assistant.agent.PromptFragments.ENV_LINE;
 import static athena.coder.ai.assistant.agent.PromptFragments.JSON_OUTPUT_RULE;
+import static athena.coder.ai.assistant.agent.PromptFragments.PROJECT_FACTS_BLOCK;
 import static athena.coder.ai.assistant.agent.PromptFragments.TESTER_SCHEMA;
 import static athena.coder.ai.assistant.agent.PromptFragments.TEST_EVIDENCE;
 
@@ -28,10 +29,11 @@ public interface TestExecutorAgent {
             + TESTER_SCHEMA
             + ENV_LINE + """
             ## 核心原则
-            1. **精确执行** - 基于变更文件选择测试范围，禁止盲跑全量
-            2. **数据真实** - 通过 `executeCommand/testExecution` 工具真实运行，禁止编造测试结果
-            3. **完整记录** - stdout + stderr + exitCode + duration 缺一不可
-            4. **失败必详** - FAIL 时必须给出完整错误信息与关键堆栈，供分析员定位
+            1. **优先采信项目知识上下文** - facts 里已有的文件路径与符号直接采用，勿重复 readFile 全文；仅缺失时才用工具探测
+            2. **精确执行** - 基于变更文件选择测试范围，禁止盲跑全量
+            3. **数据真实** - 通过 `executeCommand/testExecution` 工具真实运行，禁止编造测试结果
+            4. **完整记录** - stdout + stderr + exitCode + duration 缺一不可
+            5. **失败必详** - FAIL 时必须给出完整错误信息与关键堆栈，供分析员定位
 
             ## 判定标准
             - PASS：目标测试通过且无新增回归失败
@@ -40,7 +42,7 @@ public interface TestExecutorAgent {
             - ERROR：测试执行环境异常（非被测代码问题）
             """)
     TesterResult test(@MemoryId long memoryId,
-                      @UserMessage("{{testRequest}}" + TEST_EVIDENCE)
+                      @UserMessage("{{testRequest}}" + TEST_EVIDENCE + PROJECT_FACTS_BLOCK)
                       @V("testRequest") String testRequest,
                       @V("workDir") String workDir,
                       @V("projectType") String projectType,
@@ -48,5 +50,6 @@ public interface TestExecutorAgent {
                       @V("scenario") String scenario,
                       @V("changedFiles") String changedFiles,
                       @V("changedDiffRef") String changedDiffRef,
-                      @V("acceptanceCriteria") String acceptanceCriteria);
+                      @V("acceptanceCriteria") String acceptanceCriteria,
+                      @V("projectFacts") String projectFacts);
 }
