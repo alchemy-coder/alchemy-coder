@@ -1,6 +1,7 @@
 package athena.coder.ai.workflow.node;
 
 import athena.coder.ai.assistant.agent.PlannerAgent;
+import athena.coder.ai.assistant.agent.result.confirm.Revise;
 import athena.coder.ai.assistant.agent.result.planner.PlanResult;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.config.AgentToolPolicy;
@@ -74,20 +75,90 @@ public class PlanNode extends AbstractAgentNode {
     }
 
     /**
-     * 组装结构化重规划请求：原需求 / 上一版计划 / 修改意见分段隔离，
+     * 组装结构化重规划请求：原需求 / 上一版计划 / 修改指令分段隔离，
      * 避免模型将原需求与修改意见混淆；同时提供上一版计划，
      * 使意见能精确对应到具体任务（如“任务2改成xx”）
      */
     private String buildReplanMessage(String originalRequirement, String previousPlan, String feedback) {
         StringBuilder sb = new StringBuilder();
-        sb.append("【场景说明】用户拒绝了上一版执行计划，请基于原需求与下方修改意见重新规划。\n\n");
+        sb.append("【场景说明】用户对上一版执行计划提出了修改意见，请基于原需求与下方修改指令重新规划。\n\n");
         sb.append("【原需求】\n").append(originalRequirement).append("\n\n");
         if (previousPlan != null && !previousPlan.isBlank()) {
             sb.append("【上一版执行计划】\n").append(previousPlan).append("\n\n");
         }
-        sb.append("【用户修改意见】\n").append(feedback).append("\n\n");
-        sb.append("请保留上一版计划中用户未提出异议的部分，仅按修改意见调整相关任务。");
+        appendFeedback(sb, feedback);
+        sb.append("\n请保留上一版计划中用户未提出异议的部分，仅按修改指令调整相关任务。");
         return sb.toString();
+    }
+
+    /**
+     * 渲染修改反馈：PLAN_FEEDBACK 现为结构化 JSON（intent/raw/revise）；
+     * 能解析出 revise 时渲染结构化指令 + 原文，否则降级为纯文本（兼容旧格式）
+     */
+    private void appendFeedback(StringBuilder sb, String feedback) {
+        Revise revise = null;
+        String raw = feedback;
+        try {
+            JsonNode node = MAPPER.readTree(feedback);
+            if (node != null && node.isObject()) {
+                JsonNode reviseNode = node.get("revise");
+                if (reviseNode != null && !reviseNode.isNull()) {
+                    revise = MAPPER.treeToValue(reviseNode, Revise.class);
+                }
+                JsonNode rawNode = node.get("raw");
+                if (rawNode != null && rawNode.isTextual()) {
+                    raw = rawNode.asText();
+                }
+            }
+        } catch (Exception e) {
+            revise = null;   // 旧格式 / 非法 JSON：按纯文本渲染
+        }
+
+        if (revise != null) {
+            sb.append("【用户修改指令（结构化）】\n");
+            renderRevise(sb, revise);
+            if (raw != null && !raw.isBlank()) {
+                sb.append("【用户原始回复（参考细节）】\n").append(raw).append("\n");
+            }
+        } else {
+            sb.append("【用户修改意见】\n").append(raw == null ? "" : raw).append("\n");
+        }
+    }
+
+    /**
+     * 将结构化修订指令渲染为 Planner 可精确执行的提示文本
+     */
+    private void renderRevise(StringBuilder sb, Revise revise) {
+        String scope = revise.scope();
+        if (scope == null || scope.isBlank()) {
+            scope = Revise.SCOPE_OVERALL;
+        }
+        sb.append("- 修改范围: ").append(switch (scope) {
+            case Revise.SCOPE_TARGETED -> "定向修改（仅调整下方指定任务，其余保留）";
+            case Revise.SCOPE_ADD -> "追加任务（在现有计划上新增）";
+            case Revise.SCOPE_OVERALL -> "整体重来（重新设计，保留原需求）";
+            default -> scope;
+        }).append("\n");
+
+        if (revise.targetTaskIds() != null && !revise.targetTaskIds().isEmpty()) {
+            sb.append("- 目标任务: ").append(revise.targetTaskIds()).append("\n");
+        }
+        if (revise.summary() != null && !revise.summary().isBlank()) {
+            sb.append("- 诉求概览: ").append(revise.summary().trim()).append("\n");
+        }
+        if (revise.directives() != null && !revise.directives().isEmpty()) {
+            sb.append("- 修改要点:\n");
+            for (Revise.Directive d : revise.directives()) {
+                sb.append("  * ").append(d.target() == null ? "" : d.target());
+                if (d.change() != null && !d.change().isBlank()) {
+                    sb.append(" → ").append(d.change());
+                }
+                if (d.reason() != null && !d.reason().isBlank()) {
+                    sb.append("（原因: ").append(d.reason()).append("）");
+                }
+                sb.append("\n");
+            }
+        }
     }
 
     /**

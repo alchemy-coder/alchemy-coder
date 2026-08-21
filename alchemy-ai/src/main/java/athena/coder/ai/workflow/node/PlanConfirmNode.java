@@ -3,6 +3,7 @@ package athena.coder.ai.workflow.node;
 import athena.coder.ai.assistant.agent.ConfirmIntentAgent;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntent;
 import athena.coder.ai.assistant.agent.result.confirm.ConfirmIntentResult;
+import athena.coder.ai.assistant.agent.result.confirm.Revise;
 import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.workflow.entity.StepRole;
@@ -10,6 +11,7 @@ import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.workflow.gate.HumanGate;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.exception.RocAgentException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -26,10 +28,11 @@ import static org.bsc.langgraph4j.GraphDefinition.END;
  * <p>
  * 负责：
  * 1. 输出确认提示，通过 {@link HumanGate} 阻塞等待用户回复（默认 30 分钟超时，超时终止流程）
- * 2. 调 ConfirmIntentAgent 判定回复意图（确认/拒绝），模型失败时降级为关键词规则兜底；拒绝时以用户原文作为修改意见
+ * 2. 调 ConfirmIntentAgent 判定回复意图（确认/提修改意见/拒绝取消），模型失败时降级为关键词规则兜底
  * 3. 确认 → 按 WORKFLOW_MODE 分流到对应子工作流节点（枚举名与 NodeEnum 同名，信号零映射；
  *    mode 由 ROUTER 节点校验保证非空，此处直接取用）
- * 4. 拒绝 → 将修改意见写入 PLAN_FEEDBACK，回到 PLANNER 重新规划（带回环熔断）
+ * 4. 提修改意见 → 结构化修订指令 + 原文双存写入 PLAN_FEEDBACK，回到 PLANNER 重新规划（带回环熔断）
+ * 5. 拒绝取消 → 提示已取消，直接 END
  */
 public class PlanConfirmNode extends AbstractAgentNode {
 
@@ -41,6 +44,10 @@ public class PlanConfirmNode extends AbstractAgentNode {
     private static final Set<String> CONFIRM_WORDS = Set.of(
             "确认", "确认执行", "同意", "执行", "继续", "开始执行", "没问题",
             "ok", "okay", "yes", "y");
+
+    private static final Set<String> REJECT_WORDS = Set.of(
+            "取消", "不做了", "算了", "终止", "别做了", "别执行", "停止", "不要了",
+            "cancel", "stop", "abort");
 
     private static final String DEFAULT_FEEDBACK = "用户对当前计划不满意，请重新审视需求、调整任务拆解后重新规划";
 
@@ -73,30 +80,35 @@ public class PlanConfirmNode extends AbstractAgentNode {
 
         ConfirmIntentResult intentResult = classifyReply(state, ctx, reply);
 
-        if (intentResult.intent() == ConfirmIntent.CONFIRM) {
-            // WORKFLOW_MODE 由 ROUTER 节点写入并校验非空（失败则抛异常终止流程，不会到达本节点）
-            WorkflowMode mode = ctx.requireWorkflowMode();
-            state.outputBotResponse("计划已确认，进入" + mode.label() + "开始执行...", ChatEnum.ROBOT);
-            // WorkflowMode 与 NodeEnum 子工作流枚举同名，name() 即主图路由信号，零映射
-            return Map.of(NEXT_NODE, mode.name());
-        }
+        return switch (intentResult.intent()) {
+            case CONFIRM -> {
+                // WORKFLOW_MODE 由 ROUTER 节点写入并校验非空（失败则抛异常终止流程，不会到达本节点）
+                WorkflowMode mode = ctx.requireWorkflowMode();
+                state.outputBotResponse("计划已确认，进入" + mode.label() + "开始执行...", ChatEnum.ROBOT);
+                // WorkflowMode 与 NodeEnum 子工作流枚举同名，name() 即主图路由信号，零映射
+                yield Map.of(NEXT_NODE, mode.name());
+            }
+            case REJECT -> {
+                state.outputBotResponse("已取消本次规划。如需继续，请重新发送您的需求。", ChatEnum.ROBOT);
+                yield Map.of(NEXT_NODE, END);
+            }
+            case REVISE -> {
+                // 提修改意见：结构化修订指令 + 原文双存，回 PLANNER 重规划（带回环熔断）
+                int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
+                if (count > MAX_REPLAN_COUNT) {
+                    state.outputBotResponse("已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
+                    yield Map.of(NEXT_NODE, END);
+                }
+                String feedback = buildReplanFeedback(reply, intentResult.revise());
+                notifyProgress(state, "已识别修改意见，将按意见重新规划...");
 
-        // 拒绝：回环计数熔断
-        int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
-        if (count > MAX_REPLAN_COUNT) {
-            state.outputBotResponse("已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
-            return Map.of(NEXT_NODE, END);
-        }
-
-        // 修改意见直接取用户原文，避免模型提炼造成信息折损
-        String feedback = (reply == null || reply.isBlank()) ? DEFAULT_FEEDBACK : reply;
-        notifyProgress(state, "用户拒绝计划，将按修改意见重新规划...");
-
-        Map<String, Object> ret = new HashMap<>();
-        ret.put(PLAN_FEEDBACK, feedback);
-        ret.put(PLAN_CONFIRM_COUNT, count);
-        ret.put(NEXT_NODE, PLANNER.name());
-        return ret;
+                Map<String, Object> ret = new HashMap<>();
+                ret.put(PLAN_FEEDBACK, feedback);
+                ret.put(PLAN_CONFIRM_COUNT, count);
+                ret.put(NEXT_NODE, PLANNER.name());
+                yield ret;
+            }
+        };
     }
 
     /**
@@ -124,7 +136,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
     }
 
     /**
-     * 规则兜底：精确命中确认词 → CONFIRM；否则 REJECT
+     * 规则兜底：精确命中确认词 → CONFIRM；命中取消词 → REJECT；其余 → REVISE（此环节回复大概率是要调整）
      */
     private ConfirmIntentResult fallbackClassify(String reply) {
         if (reply != null) {
@@ -133,8 +145,25 @@ public class PlanConfirmNode extends AbstractAgentNode {
             if (CONFIRM_WORDS.contains(normalized)) {
                 return new ConfirmIntentResult(ConfirmIntent.CONFIRM);
             }
+            if (REJECT_WORDS.stream().anyMatch(normalized::contains)) {
+                return new ConfirmIntentResult(ConfirmIntent.REJECT);
+            }
         }
-        return new ConfirmIntentResult(ConfirmIntent.REJECT);
+        return new ConfirmIntentResult(ConfirmIntent.REVISE);
+    }
+
+    /**
+     * 组装重规划反馈：结构化修订指令（revise）+ 用户原文（raw）双存为 JSON，
+     * 供 PlanNode 渲染精准重规划 prompt；revise 为空时仅存原文兜底。
+     */
+    private String buildReplanFeedback(String raw, Revise revise) {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("intent", ConfirmIntent.REVISE.name());
+        node.put("raw", (raw == null || raw.isBlank()) ? DEFAULT_FEEDBACK : raw);
+        if (revise != null) {
+            node.set("revise", MAPPER.valueToTree(revise));
+        }
+        return node.toString();
     }
 
     @Override
