@@ -6,6 +6,9 @@ module alchemy_infra {
     requires java.sql;
     requires java.logging;
 
+    opens athena.coder.entity.tree;
+
     exports athena.coder.infra;
     exports athena.coder.infra.repository;
+    exports athena.coder.entity.tree;
 }
