@@ -2,8 +2,8 @@ package athena.coder.ui.content.chatview;
 
 import athena.coder.app.ChatManager;
 import athena.coder.ai.spi.ErrorLogger;
-import athena.coder.entity.chat.ChatDetail;
 import athena.coder.entity.chat.ChatEnum;
+import athena.coder.infra.entity.chat.ChatDetail;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;

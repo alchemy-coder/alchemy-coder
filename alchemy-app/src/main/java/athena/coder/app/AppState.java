@@ -1,6 +1,6 @@
 package athena.coder.app;
 
-import athena.coder.entity.chat.ChatDetail;
+import athena.coder.infra.entity.chat.ChatDetail;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 

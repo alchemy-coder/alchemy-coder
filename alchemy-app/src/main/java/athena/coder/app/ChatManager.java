@@ -5,7 +5,7 @@ import athena.coder.ai.workflow.MasterWorkflow;
 import athena.coder.ai.workflow.gate.HumanGate;
 import athena.coder.infra.repository.ChatRepository;
 import athena.coder.infra.repository.QuestRepository;
-import athena.coder.entity.chat.ChatDetail;
+import athena.coder.infra.entity.chat.ChatDetail;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.tree.QuestEntity;

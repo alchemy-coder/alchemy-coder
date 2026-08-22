@@ -1,6 +1,6 @@
 package athena.coder.infra.repository;
 
-import athena.coder.entity.chat.ChatDetail;
+import athena.coder.infra.entity.chat.ChatDetail;
 
 import java.util.List;
 

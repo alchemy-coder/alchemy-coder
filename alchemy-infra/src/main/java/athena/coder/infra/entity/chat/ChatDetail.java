@@ -1,4 +1,4 @@
-package athena.coder.entity.chat;
+package athena.coder.infra.entity.chat;
 
 import java.io.Serializable;
 
