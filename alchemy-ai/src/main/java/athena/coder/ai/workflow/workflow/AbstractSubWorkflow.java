@@ -59,7 +59,6 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
             buildGraph(g);
             compiledGraph = g.compile();
         } catch (Exception e) {
-            long costMs = System.currentTimeMillis() - startMs;
             ErrorLogger.log(workflowName(), e, state.getTaskId(), null, null);
             state.outputBotResponse("[失败] " + workflowName() + " 图构建失败: " + e.getMessage(), ChatEnum.ROBOT_ERROR);
             return Map.of();
@@ -69,7 +68,6 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
         try {
             finalState = compiledGraph.invoke(state.data());
         } catch (Exception e) {
-            long costMs = System.currentTimeMillis() - startMs;
             // 节点执行异常已由 AbstractAgentNode.apply 统一记录（含 nodeName 上下文），
             // 此处仅输出用户提示，避免同一 taskId 产生双份 ERROR 日志。
             state.outputBotResponse("[失败] " + workflowName() + " 执行失败: " + e.getMessage(), ChatEnum.ROBOT_ERROR);
