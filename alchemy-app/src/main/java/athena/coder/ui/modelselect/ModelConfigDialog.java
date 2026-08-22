@@ -249,6 +249,8 @@ public class ModelConfigDialog {
             rb.setOnAction(e -> {
                 selectedLlmModel = model;
                 llmKeyField.setPromptText("输入 " + ModelSelectView.formatModelName(model) + " 的 API Key");
+                String apiKey = modelConfig.findApiKey(ModelType.CHAT, model.getModel(), model.getVersion());
+                llmKeyField.setText(apiKey != null ? apiKey : "");
             });
             group.getChildren().add(rb);
         }
@@ -266,6 +268,8 @@ public class ModelConfigDialog {
             rb.setOnAction(e -> {
                 selectedEmbModel = model;
                 embKeyField.setPromptText("输入 " + formatEmbModelName(model) + " 的 API Key");
+                String apiKey = modelConfig.findApiKey(ModelType.EMBEDDING, model.getModel(), model.getVersion());
+                embKeyField.setText(apiKey != null ? apiKey : "");
             });
             group.getChildren().add(rb);
         }
