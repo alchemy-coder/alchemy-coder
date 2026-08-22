@@ -5,7 +5,7 @@ import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.tool.ToolRegistry;
 import athena.coder.ai.tool.config.AgentToolPolicy;
 import athena.coder.ai.util.ProjectKeyUtil;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
@@ -27,7 +27,7 @@ public final class AiAssistantFactory {
     private AiAssistantFactory() {
     }
 
-    public static <T> T newChatAssistant(ModelEnum modelEnum, Class<T> agentClass, AgentToolPolicy policy) {
+    public static <T> T newChatAssistant(LLMModelEnum modelEnum, Class<T> agentClass, AgentToolPolicy policy) {
         ChatModel model = AiInfra.modelProvider().chatModel(modelEnum);
         return buildAssistant(agentClass, model, policy);
     }

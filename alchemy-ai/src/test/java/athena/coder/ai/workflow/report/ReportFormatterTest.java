@@ -2,7 +2,7 @@ package athena.coder.ai.workflow.report;
 
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.entity.chat.ChatEnum;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -18,7 +18,7 @@ class ReportFormatterTest {
         m.put(WorkflowState.INIT_TASK_ID, 1L);
         m.put(WorkflowState.INIT_WORK_FULL_PATH, "/tmp/proj");
         m.put(WorkflowState.INIT_USER_MESSAGE, "需求");
-        m.put(WorkflowState.INIT_MODEL_TYPE, ModelEnum.QIANWEN37MAX);
+        m.put(WorkflowState.INIT_MODEL_TYPE, LLMModelEnum.QIANWEN37MAX);
         m.put(WorkflowState.INIT_BOT_RESPONSE, (BiConsumer<String, ChatEnum>) (a, b) -> {});
         if (extra != null) {
             m.putAll(extra);

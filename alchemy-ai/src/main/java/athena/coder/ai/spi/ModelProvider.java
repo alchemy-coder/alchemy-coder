@@ -1,6 +1,6 @@
 package athena.coder.ai.spi;
 
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -17,7 +17,7 @@ public interface ModelProvider {
     /**
      * 按模型枚举构建语言大模型；未配置 apiKey 时抛出异常。
      */
-    ChatModel chatModel(ModelEnum modelEnum);
+    ChatModel chatModel(LLMModelEnum modelEnum);
 
     /**
      * 构建向量大模型；未配置 apiKey 或构建失败返回 null（RAG 降级）。

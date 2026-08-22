@@ -10,7 +10,7 @@ import athena.coder.ai.workflow.entity.StepRole;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import athena.coder.ai.util.ProjectTypeUtil;
 import athena.coder.entity.chat.ChatEnum;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.exception.RocAgentException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -319,7 +319,7 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
      * workflowMode 在入口节点（USER_FACE/ROUTER）阶段尚未写入，允许为 null；
      * 子工作流内的节点通过 {@link #requireWorkflowMode()} 获取（缺失时快速失败）
      */
-    protected record NodeContext(String projectPath, Long taskId, ModelEnum modelType,
+    protected record NodeContext(String projectPath, Long taskId, LLMModelEnum modelType,
                                  WorkflowMode workflowMode, String projectType) {
 
         public WorkflowMode requireWorkflowMode() {

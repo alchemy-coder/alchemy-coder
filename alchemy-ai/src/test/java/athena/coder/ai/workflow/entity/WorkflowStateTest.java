@@ -1,7 +1,7 @@
 package athena.coder.ai.workflow.entity;
 
 import athena.coder.entity.chat.ChatEnum;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -21,7 +21,7 @@ class WorkflowStateTest {
         m.put(WorkflowState.INIT_TASK_ID, 1L);
         m.put(WorkflowState.INIT_WORK_FULL_PATH, "/tmp/proj");
         m.put(WorkflowState.INIT_USER_MESSAGE, "实现登录");
-        m.put(WorkflowState.INIT_MODEL_TYPE, ModelEnum.QIANWEN37MAX);
+        m.put(WorkflowState.INIT_MODEL_TYPE, LLMModelEnum.QIANWEN37MAX);
         m.put(WorkflowState.INIT_BOT_RESPONSE, (BiConsumer<String, ChatEnum>) (msg, type) -> {});
         return m;
     }
@@ -47,7 +47,7 @@ class WorkflowStateTest {
         assertEquals(1L, s.getTaskId());
         assertEquals("/tmp/proj", s.getWorkFullPath());
         assertEquals("实现登录", s.getUserMessage());
-        assertEquals(ModelEnum.QIANWEN37MAX, s.getModelType());
+        assertEquals(LLMModelEnum.QIANWEN37MAX, s.getModelType());
     }
 
     @Test

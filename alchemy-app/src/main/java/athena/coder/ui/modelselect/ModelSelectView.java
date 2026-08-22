@@ -1,7 +1,7 @@
 package athena.coder.ui.modelselect;
 
 import atlantafx.base.theme.Styles;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.control.Button;
@@ -25,7 +25,7 @@ public class ModelSelectView {
      * @param onSelect 选中模型后的回调
      * @param onClose  关闭面板的回调
      */
-    public static VBox createModelSelectPanel(Consumer<ModelEnum> onSelect, Runnable onClose) {
+    public static VBox createModelSelectPanel(Consumer<LLMModelEnum> onSelect, Runnable onClose) {
         VBox panel = new VBox(10);
         panel.setAlignment(Pos.TOP_CENTER);
         panel.setStyle(
@@ -44,7 +44,7 @@ public class ModelSelectView {
         panel.getChildren().add(title);
 
         // 模型列表
-        for (ModelEnum model : ModelEnum.values()) {
+        for (LLMModelEnum model : LLMModelEnum.values()) {
             Button modelBtn = createModelButton(model);
             modelBtn.setOnAction(e -> {
                 onSelect.accept(model);
@@ -64,7 +64,7 @@ public class ModelSelectView {
         return panel;
     }
 
-    private static Button createModelButton(ModelEnum model) {
+    private static Button createModelButton(LLMModelEnum model) {
         String displayName = formatModelName(model);
         Button btn = new Button(displayName, new FontIcon(Feather.CPU));
         btn.getStyleClass().addAll(Styles.FLAT, Styles.ACCENT);
@@ -77,7 +77,7 @@ public class ModelSelectView {
     /**
      * 将 ModelEnum 格式化为可读的显示名称
      */
-    public static String formatModelName(ModelEnum model) {
+    public static String formatModelName(LLMModelEnum model) {
         return switch (model) {
             case QIANWEN37MAX -> "Qwen 3.7 Max";
             case QIANWEN35FLASH -> "Qwen 3.5 Flash";

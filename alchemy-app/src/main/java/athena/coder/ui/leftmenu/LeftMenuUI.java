@@ -1,6 +1,6 @@
 package athena.coder.ui.leftmenu;
 
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.tree.ProjectNode;
 import athena.coder.entity.tree.QuestEntity;
 import athena.coder.ui.modelselect.ModelSelectView;
@@ -53,7 +53,7 @@ public class LeftMenuUI {
         // 点击弹出模型选择菜单
         selectModel.setOnAction(e -> {
             ContextMenu menu = new ContextMenu();
-            for (ModelEnum model : ModelEnum.values()) {
+            for (LLMModelEnum model : LLMModelEnum.values()) {
                 MenuItem item = new MenuItem(ModelSelectView.formatModelName(model));
                 item.setOnAction(ev -> selectModel.setText(ModelSelectView.formatModelName(model)));
                 menu.getItems().add(item);

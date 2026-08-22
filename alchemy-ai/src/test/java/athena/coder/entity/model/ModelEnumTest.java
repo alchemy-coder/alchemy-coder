@@ -17,7 +17,7 @@ class ModelEnumTest {
 
     @Test
     void chatFactories_buildNonNullModels() {
-        for (ModelEnum m : ModelEnum.values()) {
+        for (LLMModelEnum m : LLMModelEnum.values()) {
             ChatModel model = m.getFactory().apply("sk-test");
             assertNotNull(model, m.name());
         }
@@ -25,10 +25,10 @@ class ModelEnumTest {
 
     @Test
     void modelEnum_metadata() {
-        assertEquals("qianwen", ModelEnum.QIANWEN37MAX.getModel());
-        assertEquals("qwen3.7-max", ModelEnum.QIANWEN37MAX.getVersion());
-        assertEquals("deepseek", ModelEnum.DEEPSEEKV4PRO.getModel());
-        assertEquals("deepseek-v4-pro", ModelEnum.DEEPSEEKV4PRO.getVersion());
+        assertEquals("qianwen", LLMModelEnum.QIANWEN37MAX.getModel());
+        assertEquals("qwen3.7-max", LLMModelEnum.QIANWEN37MAX.getVersion());
+        assertEquals("deepseek", LLMModelEnum.DEEPSEEKV4PRO.getModel());
+        assertEquals("deepseek-v4-pro", LLMModelEnum.DEEPSEEKV4PRO.getVersion());
     }
 
     @Test

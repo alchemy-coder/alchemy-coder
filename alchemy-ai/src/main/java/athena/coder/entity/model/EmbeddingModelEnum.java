@@ -6,7 +6,7 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import java.util.function.Function;
 
 /**
- * 向量模型枚举：与 {@link ModelEnum} 同构（model/version 对应 model 表的 name/version），
+ * 向量模型枚举：与 {@link LLMModelEnum} 同构（model/version 对应 model 表的 name/version），
  * 工厂函数内聚在枚举内，新增模型只需加一个条目。
  */
 public enum EmbeddingModelEnum {

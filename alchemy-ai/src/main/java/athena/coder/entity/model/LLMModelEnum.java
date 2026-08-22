@@ -10,7 +10,7 @@ import java.util.function.Function;
  * 语言大模型枚举：与 {@link EmbeddingModelEnum} 同构（model/version 对应 model 表的 name/version），
  * 工厂函数内聚在枚举内，新增模型只需加一个条目。
  */
-public enum ModelEnum {
+public enum LLMModelEnum {
 
     QIANWEN37MAX("qianwen", "qwen3.7-max",
             key -> QwenChatModel.builder().apiKey(key).modelName("qwen3.7-max").build()),
@@ -29,7 +29,7 @@ public enum ModelEnum {
     private final String version;
     private final Function<String, ChatModel> factory;
 
-    ModelEnum(String model, String version, Function<String, ChatModel> factory) {
+    LLMModelEnum(String model, String version, Function<String, ChatModel> factory) {
         this.model = model;
         this.version = version;
         this.factory = factory;

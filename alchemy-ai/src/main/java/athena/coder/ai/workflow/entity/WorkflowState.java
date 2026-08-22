@@ -1,8 +1,7 @@
 package athena.coder.ai.workflow.entity;
 
 import athena.coder.entity.chat.ChatEnum;
-import athena.coder.entity.model.ModelEnum;
-import athena.coder.exception.RocAgentException;
+import athena.coder.entity.model.LLMModelEnum;
 import org.bsc.langgraph4j.state.AgentState;
 
 import java.util.Map;
@@ -142,7 +141,7 @@ public class WorkflowState extends AgentState {
     private final String sessionId;
 
 
-    private final ModelEnum modelType;
+    private final LLMModelEnum modelType;
 
 
     private transient final BiConsumer<String, ChatEnum> botResponse;
@@ -153,7 +152,7 @@ public class WorkflowState extends AgentState {
         this.workFullPath = Objects.requireNonNull((String) initData.get(INIT_WORK_FULL_PATH), "WORK_FULL_PATH must not be null");
         this.userMessage = Objects.requireNonNull((String) initData.get(INIT_USER_MESSAGE), "USER_MESSAGE must not be null");
         this.sessionId = (String) initData.get(INIT_SESSION_ID);
-        this.modelType = Objects.requireNonNull((ModelEnum) initData.get(INIT_MODEL_TYPE), "MODEL_TYPE must not be null");
+        this.modelType = Objects.requireNonNull((LLMModelEnum) initData.get(INIT_MODEL_TYPE), "MODEL_TYPE must not be null");
         this.botResponse = Objects.requireNonNull((BiConsumer<String, ChatEnum>) initData.get(INIT_BOT_RESPONSE), "BOT_RESPONSE must not be null");
     }
 
@@ -187,7 +186,7 @@ public class WorkflowState extends AgentState {
     }
 
 
-    public ModelEnum getModelType() {
+    public LLMModelEnum getModelType() {
         return modelType;
     }
 

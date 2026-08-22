@@ -7,7 +7,7 @@ import athena.coder.infra.repository.ChatRepository;
 import athena.coder.infra.repository.QuestRepository;
 import athena.coder.entity.chat.ChatDetail;
 import athena.coder.entity.chat.ChatEnum;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.tree.QuestEntity;
 import athena.coder.ui.content.chatview.ChatView;
 import javafx.application.Platform;
@@ -139,7 +139,7 @@ public class ChatManager {
                 initData.put(INIT_TASK_ID, curTaskId.get());
                 initData.put(INIT_WORK_FULL_PATH, getProjectPath());
                 initData.put(INIT_USER_MESSAGE, msg);
-                initData.put(INIT_MODEL_TYPE, ModelEnum.DEEPSEEKV4PRO);
+                initData.put(INIT_MODEL_TYPE, LLMModelEnum.DEEPSEEKV4PRO);
                 initData.put(INIT_BOT_RESPONSE, robotResponseWriter);
                 initData.put(INIT_SESSION_ID, uuid);
 

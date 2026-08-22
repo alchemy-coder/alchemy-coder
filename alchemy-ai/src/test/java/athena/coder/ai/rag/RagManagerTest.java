@@ -2,7 +2,7 @@ package athena.coder.ai.rag;
 
 import athena.coder.ai.spi.AiInfra;
 import athena.coder.ai.spi.ModelProvider;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -28,7 +28,7 @@ class RagManagerTest {
         EmbeddingModel embeddingModel;
         EmbeddingStore<TextSegment> store;
 
-        @Override public ChatModel chatModel(ModelEnum m) { throw new UnsupportedOperationException(); }
+        @Override public ChatModel chatModel(LLMModelEnum m) { throw new UnsupportedOperationException(); }
         @Override public EmbeddingModel embeddingModel() { return embeddingModel; }
         @Override public EmbeddingStore<TextSegment> embeddingStore(String projectKey) { return store; }
     }

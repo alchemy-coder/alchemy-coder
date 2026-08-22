@@ -1,6 +1,6 @@
 package athena.coder.ai.spi;
 
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.model.ModelType;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ class DefaultModelProviderTest {
         m.byKey.put("chat|qianwen|qwen3.7-max", "sk-1");
         DefaultModelProvider p = new DefaultModelProvider(m);
 
-        assertNotNull(p.chatModel(ModelEnum.QIANWEN37MAX));
+        assertNotNull(p.chatModel(LLMModelEnum.QIANWEN37MAX));
         assertEquals(ModelType.CHAT, m.lastType.get());
         assertEquals("qianwen|qwen3.7-max", m.lastNameVersion.get());
     }
@@ -42,7 +42,7 @@ class DefaultModelProviderTest {
     @Test
     void chatModel_missingKey_throws() {
         DefaultModelProvider p = new DefaultModelProvider((t, n, v) -> null);
-        assertThrows(NullPointerException.class, () -> p.chatModel(ModelEnum.QIANWEN37MAX));
+        assertThrows(NullPointerException.class, () -> p.chatModel(LLMModelEnum.QIANWEN37MAX));
     }
 
     @Test

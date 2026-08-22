@@ -2,7 +2,7 @@ package athena.coder.ai.spi;
 
 import athena.coder.ai.rag.SqliteEmbeddingStore;
 import athena.coder.entity.model.EmbeddingModelEnum;
-import athena.coder.entity.model.ModelEnum;
+import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.model.ModelType;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
@@ -15,7 +15,7 @@ import java.util.Objects;
  * {@link ModelProvider} 默认实现。
  * <p>
  * apiKey 取自 model 表（{@link ModelConfigPort}），具体 builder 内聚在
- * {@link ModelEnum}/{@link EmbeddingModelEnum} 枚举工厂内。
+ * {@link LLMModelEnum}/{@link EmbeddingModelEnum} 枚举工厂内。
  */
 public final class DefaultModelProvider implements ModelProvider {
 
@@ -26,7 +26,7 @@ public final class DefaultModelProvider implements ModelProvider {
     }
 
     @Override
-    public ChatModel chatModel(ModelEnum modelEnum) {
+    public ChatModel chatModel(LLMModelEnum modelEnum) {
         String apiKey = Objects.requireNonNull(
                 models.findApiKey(ModelType.CHAT, modelEnum.getModel(), modelEnum.getVersion()),
                 "模型配置缺失: " + modelEnum);
