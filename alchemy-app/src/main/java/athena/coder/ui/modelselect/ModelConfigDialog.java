@@ -60,46 +60,32 @@ public class ModelConfigDialog {
 
     private static final String RADIO_STYLE =
             "-fx-font-size: 13px;" +
-            "-fx-padding: 5 0 5 0;";
-
-    private static final String PRIMARY_BTN_STYLE =
-            "-fx-background-color: #6366F1;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 13px;" +
-            "-fx-padding: 8 24 8 24;" +
+            "-fx-padding: 6 10 6 10;" +
+            "-fx-background-color: transparent;" +
             "-fx-background-radius: 6;" +
-            "-fx-cursor: hand;";
+            "-fx-text-fill: #374151;";
 
-    private static final String PRIMARY_BTN_HOVER_STYLE =
-            "-fx-background-color: #4F46E5;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-weight: bold;" +
+    private static final String RADIO_SELECTED_STYLE =
             "-fx-font-size: 13px;" +
-            "-fx-padding: 8 24 8 24;" +
+            "-fx-padding: 6 10 6 10;" +
+            "-fx-background-color: #E5E7EB;" +
             "-fx-background-radius: 6;" +
-            "-fx-cursor: hand;";
+            "-fx-text-fill: #111827;";
 
-    private static final String SECONDARY_BTN_STYLE =
-            "-fx-background-color: #FFFFFF;" +
-            "-fx-border-color: #D1D5DB;" +
-            "-fx-border-width: 1;" +
-            "-fx-text-fill: #374151;" +
-            "-fx-font-size: 13px;" +
-            "-fx-padding: 8 20 8 20;" +
-            "-fx-background-radius: 6;" +
-            "-fx-border-radius: 6;" +
-            "-fx-cursor: hand;";
-
-    private static final String SECONDARY_BTN_HOVER_STYLE =
+    private static final String BTN_STYLE =
             "-fx-background-color: #F3F4F6;" +
-            "-fx-border-color: #9CA3AF;" +
-            "-fx-border-width: 1;" +
             "-fx-text-fill: #374151;" +
             "-fx-font-size: 13px;" +
-            "-fx-padding: 8 20 8 20;" +
-            "-fx-background-radius: 6;" +
-            "-fx-border-radius: 6;" +
+            "-fx-padding: 8 14 8 14;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;";
+
+    private static final String BTN_HOVER_STYLE =
+            "-fx-background-color: #E5E7EB;" +
+            "-fx-text-fill: #111827;" +
+            "-fx-font-size: 13px;" +
+            "-fx-padding: 8 14 8 14;" +
+            "-fx-background-radius: 8;" +
             "-fx-cursor: hand;";
 
     private final LLMModelEnum initialLlmModel;
@@ -259,6 +245,13 @@ public class ModelConfigDialog {
         rb.setStyle(RADIO_STYLE);
         rb.setCursor(Cursor.HAND);
         rb.setMaxWidth(Double.MAX_VALUE);
+        rb.selectedProperty().addListener((obs, old, selected) -> {
+            if (selected) {
+                rb.setStyle(RADIO_SELECTED_STYLE);
+            } else {
+                rb.setStyle(RADIO_STYLE);
+            }
+        });
         return rb;
     }
 
@@ -295,15 +288,15 @@ public class ModelConfigDialog {
         bar.setAlignment(Pos.CENTER_RIGHT);
 
         Button cancelBtn = new Button("取消");
-        cancelBtn.setStyle(SECONDARY_BTN_STYLE);
-        cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle(SECONDARY_BTN_HOVER_STYLE));
-        cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(SECONDARY_BTN_STYLE));
+        cancelBtn.setStyle(BTN_STYLE);
+        cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle(BTN_HOVER_STYLE));
+        cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(BTN_STYLE));
         cancelBtn.setOnAction(e -> dialog.close());
 
         Button saveBtn = new Button("保存配置");
-        saveBtn.setStyle(PRIMARY_BTN_STYLE);
-        saveBtn.setOnMouseEntered(e -> saveBtn.setStyle(PRIMARY_BTN_HOVER_STYLE));
-        saveBtn.setOnMouseExited(e -> saveBtn.setStyle(PRIMARY_BTN_STYLE));
+        saveBtn.setStyle(BTN_STYLE);
+        saveBtn.setOnMouseEntered(e -> saveBtn.setStyle(BTN_HOVER_STYLE));
+        saveBtn.setOnMouseExited(e -> saveBtn.setStyle(BTN_STYLE));
         saveBtn.setDefaultButton(true);
         saveBtn.setOnAction(e -> {
             onSave.accept(new Result(

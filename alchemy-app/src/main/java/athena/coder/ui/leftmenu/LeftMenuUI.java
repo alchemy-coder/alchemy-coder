@@ -9,8 +9,8 @@ import athena.coder.ui.modelselect.ModelSelectView;
 import atlantafx.base.theme.Styles;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
-import javafx.scene.Cursor;
 import javafx.scene.control.*;
+import javafx.scene.paint.Color;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -26,31 +26,64 @@ public class LeftMenuUI {
 
     public final static double leftMenuWidth = 200;
 
-    public static Button newCreateQuestButton() {
+    private static final String MENU_BTN_STYLE =
+            "-fx-background-color: #F3F4F6;" +
+            "-fx-text-fill: #374151;" +
+            "-fx-font-size: 13px;" +
+            "-fx-padding: 8 14 8 14;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;";
 
-        Button createQuestButton = new Button("创建Quest", new FontIcon(Feather.PLUS));
-        createQuestButton.getStyleClass().addAll(
-                Styles.FLAT,
-                Styles.ACCENT
-        );
+    private static final String MENU_BTN_HOVER_STYLE =
+            "-fx-background-color: #E5E7EB;" +
+            "-fx-text-fill: #111827;" +
+            "-fx-font-size: 13px;" +
+            "-fx-padding: 8 14 8 14;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;";
+
+    public static Button newCreateQuestButton() {
+        FontIcon icon = new FontIcon(Feather.PLUS);
+        icon.setIconColor(Color.web("#6B7280"));
+        icon.setIconSize(16);
+
+        Button createQuestButton = new Button("创建Quest", icon);
+        createQuestButton.setStyle(MENU_BTN_STYLE);
         createQuestButton.setMaxWidth(Double.MAX_VALUE);
         createQuestButton.setAlignment(Pos.CENTER_LEFT);
-        createQuestButton.setCursor(Cursor.HAND);
+        createQuestButton.setOnMouseEntered(e -> {
+            createQuestButton.setStyle(MENU_BTN_HOVER_STYLE);
+            icon.setIconColor(Color.web("#374151"));
+        });
+        createQuestButton.setOnMouseExited(e -> {
+            createQuestButton.setStyle(MENU_BTN_STYLE);
+            icon.setIconColor(Color.web("#6B7280"));
+        });
         createQuestButton.setOnAction(_ -> {
             chatModel.setValue(false);
             chatList.clear();
             curTaskId.setValue(0);
         });
-        createQuestButton.setMinWidth(leftMenuWidth);
         return createQuestButton;
     }
 
     public static Button newSelectModelButton() {
-        Button selectModel = new Button("选择模型", new FontIcon(Feather.ZAP));
+        FontIcon icon = new FontIcon(Feather.ZAP);
+        icon.setIconColor(Color.web("#6B7280"));
+        icon.setIconSize(16);
+
+        Button selectModel = new Button("选择模型", icon);
+        selectModel.setStyle(MENU_BTN_STYLE);
         selectModel.setMaxWidth(Double.MAX_VALUE);
         selectModel.setAlignment(Pos.CENTER_LEFT);
-        selectModel.setCursor(Cursor.HAND);
-        selectModel.getStyleClass().addAll(Styles.FLAT, Styles.ACCENT);
+        selectModel.setOnMouseEntered(e -> {
+            selectModel.setStyle(MENU_BTN_HOVER_STYLE);
+            icon.setIconColor(Color.web("#374151"));
+        });
+        selectModel.setOnMouseExited(e -> {
+            selectModel.setStyle(MENU_BTN_STYLE);
+            icon.setIconColor(Color.web("#6B7280"));
+        });
 
         selectModel.setOnAction(e -> {
             ModelConfigDialog dialog = new ModelConfigDialog(
