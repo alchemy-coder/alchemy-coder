@@ -15,8 +15,6 @@ module alchemy_ai {
     opens athena.coder.entity;
     opens athena.coder.entity.chat;
     opens athena.coder.entity.model;
-    opens athena.coder.entity.tree;
-
     opens athena.coder.ai.tool to langchain4j;
     opens athena.coder.ai.assistant.agent.result to com.fasterxml.jackson.databind, langchain4j, langchain4j.core;
     opens athena.coder.ai.assistant.agent.result.user to com.fasterxml.jackson.databind, langchain4j, langchain4j.core;
@@ -67,6 +65,5 @@ module alchemy_ai {
     exports athena.coder.entity;
     exports athena.coder.entity.chat;
     exports athena.coder.entity.model;
-    exports athena.coder.entity.tree;
     exports athena.coder.exception;
 }
