@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 public class ModelConfigDialog {
 
     private static final double DIALOG_WIDTH = 440;
-    private static final double DIALOG_HEIGHT = 420;
+    private static final double DIALOG_HEIGHT = 450;
 
     private static final String CARD_STYLE =
             "-fx-background-color: #F9FAFB;" +
@@ -120,7 +120,16 @@ public class ModelConfigDialog {
     private final PasswordToggleField llmKeyField = new PasswordToggleField();
     private final PasswordToggleField embKeyField = new PasswordToggleField();
 
+    private final Label llmKeyError = new Label("请填写语言大模型 API Key");
+
     public ModelConfigDialog() {
+        llmKeyError.setStyle("-fx-text-fill: #EF4444; -fx-font-size: 12px;");
+        llmKeyError.setVisible(false);
+
+        llmKeyField.textProperty().addListener((obs, old, val) -> {
+            llmKeyError.setVisible(false);
+        });
+
         String[] defaultLlm = modelConfig.findDefaultModel(ModelType.CHAT);
         LLMModelEnum llmFromDb = LLMModelEnum.fromNameVersion(defaultLlm != null ? defaultLlm[0] : "", defaultLlm != null ? defaultLlm[1] : "");
         this.initialLlmModel = llmFromDb != null ? llmFromDb : LLMModelEnum.DEEPSEEKV4PRO;
@@ -206,6 +215,7 @@ public class ModelConfigDialog {
         card.getChildren().add(buildSectionTitle("语言大模型"));
         card.getChildren().add(buildLlmRadioGroup());
         card.getChildren().add(buildKeyField(llmKeyField, "语言大模型 API Key", initialLlmKey));
+        card.getChildren().add(llmKeyError);
 
         selectInitial(llmGroup, initialLlmModel);
         return card;
@@ -320,12 +330,8 @@ public class ModelConfigDialog {
         saveBtn.setOnAction(e -> {
             String llmKey = llmKeyField.getText().trim();
             if (llmKey.isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("提示");
-                alert.setHeaderText(null);
-                alert.setContentText("请填写语言大模型 API Key");
-                alert.initOwner(dialog.getOwner());
-                alert.showAndWait();
+                llmKeyError.setVisible(true);
+                llmKeyField.requestFocus();
                 return;
             }
             modelConfig.saveModel(ModelType.CHAT, selectedLlmModel.getModel(), selectedLlmModel.getVersion(), llmKey, true);
@@ -416,6 +422,10 @@ public class ModelConfigDialog {
 
         void setText(String text) {
             passwordField.setText(text);
+        }
+
+        javafx.beans.property.StringProperty textProperty() {
+            return passwordField.textProperty();
         }
     }
 
