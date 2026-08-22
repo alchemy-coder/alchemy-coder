@@ -1,7 +1,5 @@
 package athena.coder.ui.leftmenu;
 
-import athena.coder.entity.model.EmbeddingModelEnum;
-import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.tree.ProjectNode;
 import athena.coder.entity.tree.QuestEntity;
 import athena.coder.ui.modelselect.ModelConfigDialog;
@@ -11,6 +9,7 @@ import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -86,10 +85,8 @@ public class LeftMenuUI {
         });
 
         selectModel.setOnAction(e -> {
-            ModelConfigDialog dialog = new ModelConfigDialog(
-                    LLMModelEnum.DEEPSEEKV4PRO, null,
-                    EmbeddingModelEnum.QIANWEN_EMBEDDING_V4, null);
-            dialog.show((javafx.stage.Stage) selectModel.getScene().getWindow(),
+            ModelConfigDialog dialog = new ModelConfigDialog();
+            dialog.show((Stage) selectModel.getScene().getWindow(),
                     result -> selectModel.setText(ModelSelectView.formatModelName(result.llmModel())));
         });
         return selectModel;

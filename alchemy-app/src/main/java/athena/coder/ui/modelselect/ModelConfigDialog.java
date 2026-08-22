@@ -2,16 +2,13 @@ package athena.coder.ui.modelselect;
 
 import athena.coder.entity.model.EmbeddingModelEnum;
 import athena.coder.entity.model.LLMModelEnum;
+import athena.coder.entity.model.ModelType;
+import athena.coder.infra.repository.SqliteModelConfig;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -107,10 +104,12 @@ public class ModelConfigDialog {
             "-fx-background-radius: 8;" +
             "-fx-cursor: hand;";
 
-    private final LLMModelEnum initialLlmModel;
-    private final String initialLlmKey;
-    private final EmbeddingModelEnum initialEmbModel;
-    private final String initialEmbKey;
+    private final SqliteModelConfig modelConfig = new SqliteModelConfig();
+
+    private LLMModelEnum initialLlmModel;
+    private String initialLlmKey;
+    private EmbeddingModelEnum initialEmbModel;
+    private String initialEmbKey;
 
     private LLMModelEnum selectedLlmModel;
     private EmbeddingModelEnum selectedEmbModel;
@@ -121,14 +120,18 @@ public class ModelConfigDialog {
     private final PasswordToggleField llmKeyField = new PasswordToggleField();
     private final PasswordToggleField embKeyField = new PasswordToggleField();
 
-    public ModelConfigDialog(LLMModelEnum llmModel, String llmKey,
-                             EmbeddingModelEnum embModel, String embKey) {
-        this.initialLlmModel = llmModel;
-        this.initialLlmKey = llmKey;
-        this.initialEmbModel = embModel;
-        this.initialEmbKey = embKey;
-        this.selectedLlmModel = llmModel;
-        this.selectedEmbModel = embModel;
+    public ModelConfigDialog() {
+        String[] defaultLlm = modelConfig.findDefaultModel(ModelType.CHAT);
+        LLMModelEnum llmFromDb = LLMModelEnum.fromNameVersion(defaultLlm != null ? defaultLlm[0] : "", defaultLlm != null ? defaultLlm[1] : "");
+        this.initialLlmModel = llmFromDb != null ? llmFromDb : LLMModelEnum.DEEPSEEKV4PRO;
+        this.initialLlmKey = modelConfig.findApiKey(ModelType.CHAT, initialLlmModel.getModel(), initialLlmModel.getVersion());
+        this.selectedLlmModel = initialLlmModel;
+
+        String[] defaultEmb = modelConfig.findDefaultModel(ModelType.EMBEDDING);
+        EmbeddingModelEnum embFromDb = EmbeddingModelEnum.fromNameVersion(defaultEmb != null ? defaultEmb[0] : "", defaultEmb != null ? defaultEmb[1] : "");
+        this.initialEmbModel = embFromDb != null ? embFromDb : EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
+        this.initialEmbKey = modelConfig.findApiKey(ModelType.EMBEDDING, initialEmbModel.getModel(), initialEmbModel.getVersion());
+        this.selectedEmbModel = initialEmbModel;
     }
 
     public void show(Stage owner, Consumer<Result> onSave) {
@@ -161,29 +164,15 @@ public class ModelConfigDialog {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button closeBtn = new Button("✕");
-        closeBtn.setStyle(
-                "-fx-background-color: transparent;" +
+        Button closeBtn = getCloseBtn("✕", "-fx-background-color: transparent;" +
                 "-fx-text-fill: #9CA3AF;" +
                 "-fx-font-size: 14px;" +
                 "-fx-padding: 0 0 0 8;" +
-                "-fx-cursor: hand;"
-        );
-        closeBtn.setOnMouseEntered(e -> closeBtn.setStyle(
-                "-fx-background-color: transparent;" +
+                "-fx-cursor: hand;", "-fx-background-color: transparent;" +
                 "-fx-text-fill: #374151;" +
                 "-fx-font-size: 14px;" +
                 "-fx-padding: 0 0 0 8;" +
-                "-fx-cursor: hand;"
-        ));
-        closeBtn.setOnMouseExited(e -> closeBtn.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-text-fill: #9CA3AF;" +
-                "-fx-font-size: 14px;" +
-                "-fx-padding: 0 0 0 8;" +
-                "-fx-cursor: hand;"
-        ));
-        closeBtn.setOnAction(e -> dialog.close());
+                "-fx-cursor: hand;", dialog);
 
         titleBar.getChildren().addAll(title, spacer, closeBtn);
 
@@ -193,6 +182,21 @@ public class ModelConfigDialog {
         root.getChildren().add(buildButtonBar(dialog, onSave));
 
         return root;
+    }
+
+    private static @NonNull Button getCloseBtn(String text, String value, String value1, Stage dialog) {
+        Button closeBtn = new Button(text);
+        closeBtn.setStyle(
+                value
+        );
+        closeBtn.setOnMouseEntered(e -> closeBtn.setStyle(
+                value1
+        ));
+        closeBtn.setOnMouseExited(e -> closeBtn.setStyle(
+                value
+        ));
+        closeBtn.setOnAction(e -> dialog.close());
+        return closeBtn;
     }
 
     private VBox buildLlmCard() {
@@ -306,31 +310,35 @@ public class ModelConfigDialog {
         HBox bar = new HBox(12);
         bar.setAlignment(Pos.CENTER_RIGHT);
 
-        Button cancelBtn = new Button("取消");
-        cancelBtn.setStyle(BTN_STYLE);
-        cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle(BTN_HOVER_STYLE));
-        cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(BTN_STYLE));
-        cancelBtn.setOnAction(e -> dialog.close());
+        Button cancelBtn = getCloseBtn("取消", BTN_STYLE, BTN_HOVER_STYLE, dialog);
 
-        Button saveBtn = getButton(dialog, onSave);
-
-        bar.getChildren().addAll(cancelBtn, saveBtn);
-        return bar;
-    }
-
-    private @NonNull Button getButton(Stage dialog, Consumer<Result> onSave) {
         Button saveBtn = new Button("保存配置");
         saveBtn.setStyle(SAVE_BTN_STYLE);
         saveBtn.setOnMouseEntered(e -> saveBtn.setStyle(SAVE_BTN_HOVER_STYLE));
         saveBtn.setOnMouseExited(e -> saveBtn.setStyle(SAVE_BTN_STYLE));
         saveBtn.setDefaultButton(true);
         saveBtn.setOnAction(e -> {
-            onSave.accept(new Result(
-                    selectedLlmModel, llmKeyField.getText().trim(),
-                    selectedEmbModel, embKeyField.getText().trim()));
+            String llmKey = llmKeyField.getText().trim();
+            if (llmKey.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("提示");
+                alert.setHeaderText(null);
+                alert.setContentText("请填写语言大模型 API Key");
+                alert.initOwner(dialog.getOwner());
+                alert.showAndWait();
+                return;
+            }
+            modelConfig.saveModel(ModelType.CHAT, selectedLlmModel.getModel(), selectedLlmModel.getVersion(), llmKey, true);
+            String embKey = embKeyField.getText().trim();
+            if (!embKey.isEmpty()) {
+                modelConfig.saveModel(ModelType.EMBEDDING, selectedEmbModel.getModel(), selectedEmbModel.getVersion(), embKey, true);
+            }
+            onSave.accept(new Result(selectedLlmModel, llmKey, selectedEmbModel, embKey));
             dialog.close();
         });
-        return saveBtn;
+
+        bar.getChildren().addAll(cancelBtn, saveBtn);
+        return bar;
     }
 
     private static String formatEmbModelName(EmbeddingModelEnum model) {

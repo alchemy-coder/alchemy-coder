@@ -37,6 +37,15 @@ public enum EmbeddingModelEnum {
         return factory;
     }
 
+    public static EmbeddingModelEnum fromNameVersion(String name, String version) {
+        for (EmbeddingModelEnum e : values()) {
+            if (e.model.equals(name) && e.version.equals(version)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
     /**
      * 落库的模型标识（隔离不同模型的向量，互不兼容）
      */

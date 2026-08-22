@@ -6,7 +6,6 @@ import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * SQLite 数据库管理：HikariCP 连接池 + 建表初始化。
@@ -106,15 +105,6 @@ public class DbManager {
     }
 
     private static void createModelTable(Handle handle) {
-        // 旧表无 type 列则补列（区分语言大模型/向量大模型）；model 表存 api_key，只能增量补列不可重建
-        List<String> columns = handle.createQuery("PRAGMA table_info(model)")
-                .map((rs, ctx) -> rs.getString("name"))
-                .list();
-        if (!columns.isEmpty() && !columns.contains("type")) {
-            handle.execute("ALTER TABLE model ADD COLUMN type TEXT NOT NULL DEFAULT 'chat'");
-            // 历史数据回填：唯一向量模型按 name+version 改为 embedding（对应 EmbeddingModelEnum.QIANWEN_EMBEDDING_V4），其余默认 chat
-            handle.execute("UPDATE model SET type = 'embedding' WHERE name = 'qianwen' AND version = 'text-embedding-v4'");
-        }
         handle.execute("""
                 CREATE TABLE IF NOT EXISTS model (
                       id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,10 +112,15 @@ public class DbManager {
                       name        TEXT    NOT NULL,
                       version     TEXT    NOT NULL,
                       api_key     TEXT    NOT NULL,
+                      is_default  INTEGER NOT NULL DEFAULT 0,
                       create_at   TEXT,
                       update_at   TEXT,
                       deleted_at  TEXT
                   );
+                """);
+        handle.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_model_type_default
+                ON model(type, is_default) WHERE is_default = 1 AND deleted_at IS NULL;
                 """);
     }
 
@@ -229,13 +224,13 @@ public class DbManager {
                     content
                 );
                 """);
-        // 指纹表结构升级：已存在的旧表无 model 列则丢弃重建（仅丢缓存，下轮索引全量重建）
-        List<String> columns = handle.createQuery("PRAGMA table_info(rag_file_snapshot)")
-                .map((rs, ctx) -> rs.getString("name"))
-                .list();
-        if (!columns.isEmpty() && !columns.contains("model")) {
-            handle.execute("DROP TABLE rag_file_snapshot");
-        }
+//        // 指纹表结构升级：已存在的旧表无 model 列则丢弃重建（仅丢缓存，下轮索引全量重建）
+//        List<String> columns = handle.createQuery("PRAGMA table_info(rag_file_snapshot)")
+//                .map((rs, ctx) -> rs.getString("name"))
+//                .list();
+//        if (!columns.isEmpty() && !columns.contains("model")) {
+//            handle.execute("DROP TABLE rag_file_snapshot");
+//        }
         handle.execute("""
                 CREATE TABLE IF NOT EXISTS rag_file_snapshot (
                     project_key TEXT NOT NULL,

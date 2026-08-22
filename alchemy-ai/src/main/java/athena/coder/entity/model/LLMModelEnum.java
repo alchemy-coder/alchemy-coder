@@ -46,4 +46,13 @@ public enum LLMModelEnum {
     public Function<String, ChatModel> getFactory() {
         return factory;
     }
+
+    public static LLMModelEnum fromNameVersion(String name, String version) {
+        for (LLMModelEnum e : values()) {
+            if (e.model.equals(name) && e.version.equals(version)) {
+                return e;
+            }
+        }
+        return null;
+    }
 }

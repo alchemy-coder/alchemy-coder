@@ -27,4 +27,41 @@ public final class SqliteModelConfig implements ModelConfigPort {
                         .findOne()
                         .orElse(null));
     }
+
+    /**
+     * 查询指定类型的默认模型 [name, version]，没有则返回 null
+     */
+    public String[] findDefaultModel(ModelType type) {
+        return getJdbi().withHandle(handle ->
+                handle.createQuery("SELECT name, version FROM model WHERE type = :type AND is_default = 1 AND deleted_at IS NULL")
+                        .bind("type", type.dbValue())
+                        .map((rs, ctx) -> new String[]{rs.getString("name"), rs.getString("version")})
+                        .findOne()
+                        .orElse(null));
+    }
+
+    /**
+     * 保存/更新模型配置（upsert: 按 type+name+version），设为默认时自动取消同类型其他默认
+     */
+    public void saveModel(ModelType type, String name, String version, String apiKey, boolean isDefault) {
+        getJdbi().useTransaction(handle -> {
+            if (isDefault) {
+                handle.createUpdate("UPDATE model SET is_default = 0, update_at = datetime('now','localtime') WHERE type = :type AND is_default = 1 AND deleted_at IS NULL")
+                        .bind("type", type.dbValue())
+                        .execute();
+            }
+            handle.createUpdate("UPDATE model SET deleted_at = datetime('now','localtime') WHERE type = :type AND name = :name AND version = :version AND deleted_at IS NULL")
+                    .bind("type", type.dbValue())
+                    .bind("name", name)
+                    .bind("version", version)
+                    .execute();
+            handle.createUpdate("INSERT INTO model (type, name, version, api_key, is_default, create_at) VALUES (:type, :name, :version, :apiKey, :isDefault, datetime('now','localtime'))")
+                    .bind("type", type.dbValue())
+                    .bind("name", name)
+                    .bind("version", version)
+                    .bind("apiKey", apiKey)
+                    .bind("isDefault", isDefault ? 1 : 0)
+                    .execute();
+        });
+    }
 }
