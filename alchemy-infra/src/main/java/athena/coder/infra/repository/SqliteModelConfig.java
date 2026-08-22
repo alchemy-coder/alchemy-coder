@@ -55,7 +55,7 @@ public final class SqliteModelConfig implements ModelConfigPort {
                     .bind("name", name)
                     .bind("version", version)
                     .execute();
-            handle.createUpdate("INSERT INTO model (type, name, version, api_key, is_default, create_at) VALUES (:type, :name, :version, :apiKey, :isDefault, datetime('now','localtime'))")
+            handle.createUpdate("INSERT INTO model (type, name, version, api_key, is_default, create_at, update_at) VALUES (:type, :name, :version, :apiKey, :isDefault, datetime('now','localtime'), datetime('now','localtime'))")
                     .bind("type", type.dbValue())
                     .bind("name", name)
                     .bind("version", version)
