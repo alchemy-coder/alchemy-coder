@@ -1,7 +1,10 @@
 package athena.coder.ui.leftmenu;
 
+import athena.coder.entity.model.LLMModelEnum;
+import athena.coder.entity.model.ModelType;
 import athena.coder.entity.tree.ProjectNode;
 import athena.coder.entity.tree.QuestEntity;
+import athena.coder.infra.repository.SqliteModelConfig;
 import athena.coder.ui.modelselect.ModelConfigDialog;
 import athena.coder.ui.modelselect.ModelSelectView;
 import atlantafx.base.theme.Styles;
@@ -71,7 +74,17 @@ public class LeftMenuUI {
         icon.setIconColor(Color.web("#6B7280"));
         icon.setIconSize(16);
 
-        Button selectModel = new Button("选择模型", icon);
+        String btnText = "选择大模型";
+        SqliteModelConfig modelConfig = new SqliteModelConfig();
+        String[] defaultLlm = modelConfig.findDefaultModel(ModelType.CHAT);
+        if (defaultLlm != null) {
+            LLMModelEnum llmModel = LLMModelEnum.fromNameVersion(defaultLlm[0], defaultLlm[1]);
+            if (llmModel != null) {
+                btnText = ModelSelectView.formatModelName(llmModel);
+            }
+        }
+
+        Button selectModel = new Button(btnText, icon);
         selectModel.setStyle(MENU_BTN_STYLE);
         selectModel.setMaxWidth(Double.MAX_VALUE);
         selectModel.setAlignment(Pos.CENTER_LEFT);
