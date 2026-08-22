@@ -58,21 +58,21 @@ public class ReviewNode extends AbstractAgentNode {
 
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
-        String originalRequirement = requireUpstream(state.getStringValue(ORIGINAL_REQUIREMENT),
+        String originalRequirement = requireUpstream(state.getOriginalRequirement(),
                 "originalRequirement 为空，无法执行需求对齐检查");
-        String changedFiles = requireUpstream(state.getStringValue(CHANGED_FILES),
+        String changedFiles = requireUpstream(state.getChangedFiles(),
                 "changedFiles 为空，无变更可审查（需要编写环节先完成）");
-        String changedDiffRef = state.getStringValue(CHANGED_DIFF_REF);
+        String changedDiffRef = state.getChangedDiffRef();
         String testResult = config.hasTestEvidence()
-                ? requireUpstream(state.getStringValue(TEST_RESULT), "testResult 为空，缺少测试证据（需要测试环节先完成）")
+                ? requireUpstream(state.getTestResult(), "testResult 为空，缺少测试证据（需要测试环节先完成）")
                 : "";
-        String acceptanceCriteria = state.getStringValue(ACCEPTANCE_CRITERIA);
+        String acceptanceCriteria = state.getAcceptanceCriteria();
 
         warnIfBlank(changedDiffRef, "changedDiffRef 为空，将无法查看具体的变更 diff");
         warnIfBlank(acceptanceCriteria, "acceptanceCriteria 为空，将跳过验收标准核对");
 
         String changeSummary = buildChangeSummary(changedFiles, changedDiffRef);
-        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
+        String projectFacts = ProjectFacts.toPromptBlock(state.getProjectFacts());
 
         notifyModelCalling(state);
 
@@ -105,7 +105,7 @@ public class ReviewNode extends AbstractAgentNode {
         }
         notifyResult(state, reviewIcon, reviewMsg);
 
-        int loopCount = state.getIntValue(REVIEW_LOOP_COUNT);
+        int loopCount = state.getReviewLoopCount();
         if (verdict == ReviewVerdict.REQUEST_CHANGES) {
             loopCount++;
         }

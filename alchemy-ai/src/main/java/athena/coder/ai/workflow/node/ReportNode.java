@@ -56,18 +56,18 @@ public class ReportNode extends AbstractAgentNode {
 
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
-        String originalRequirement = state.getStringValue(ORIGINAL_REQUIREMENT);
-        String changedFiles = requireUpstream(state.getStringValue(CHANGED_FILES),
+        String originalRequirement = state.getOriginalRequirement();
+        String changedFiles = requireUpstream(state.getChangedFiles(),
                 "changedFiles 为空，无变更可总结（需要编写环节先完成）");
-        String changedDiffRef = state.getStringValue(CHANGED_DIFF_REF);
-        String fixStrategy = state.getStringValue(FIX_STRATEGY);
-        String testResult = state.getStringValue(TEST_RESULT);
-        String reviewResult = state.getStringValue(REVIEW_RESULT);
+        String changedDiffRef = state.getChangedDiffRef();
+        String fixStrategy = state.getFixStrategy();
+        String testResult = state.getTestResult();
+        String reviewResult = state.getReviewResult();
 
         warnIfBlank(originalRequirement, "originalRequirement 为空，将无法核对完成度");
 
         String changeSummary = buildChangeSummary(changedFiles, changedDiffRef);
-        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
+        String projectFacts = ProjectFacts.toPromptBlock(state.getProjectFacts());
 
         notifyModelCalling(state);
 

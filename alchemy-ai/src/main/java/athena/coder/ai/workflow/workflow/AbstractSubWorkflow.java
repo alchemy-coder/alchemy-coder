@@ -18,7 +18,6 @@ import static athena.coder.ai.workflow.entity.NodeEnum.DEBUGGER;
 import static athena.coder.ai.workflow.entity.NodeEnum.REVIEWER;
 import static athena.coder.ai.workflow.entity.NodeEnum.SUMMARIZER;
 import static athena.coder.ai.workflow.entity.NodeEnum.TESTER;
-import static athena.coder.ai.workflow.entity.WorkflowState.SUMMARIZE_RESULT;
 
 /**
  * 子工作流模板基类
@@ -87,9 +86,9 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
      * 输出最终 UI 结果：子图产物经 side-effect（ROBOT_REPORT）落盘，无需 merge 回主图
      */
     private Map<String, Object> renderFinalReport(WorkflowState masterState, WorkflowState subState) {
-        Object summarizeResult = subState.data().get(SUMMARIZE_RESULT);
+        String summarizeResult = subState.getSummarizeResult();
         if (summarizeResult != null) {
-            String formattedReport = ReportFormatter.format(subState, String.valueOf(summarizeResult), workflowName());
+            String formattedReport = ReportFormatter.format(subState, summarizeResult, workflowName());
             masterState.outputBotResponse(formattedReport, ChatEnum.ROBOT_REPORT);
         } else {
             ErrorLogger.warn(workflowName(), "提前终止，未生成最终总结报告");

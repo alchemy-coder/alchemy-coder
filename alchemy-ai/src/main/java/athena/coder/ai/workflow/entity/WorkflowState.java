@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.entity;
 
+import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.LLMModelEnum;
 import org.bsc.langgraph4j.state.AgentState;
@@ -190,18 +191,111 @@ public class WorkflowState extends AgentState {
         return modelType;
     }
 
+    // ===== 强类型状态访问器（收敛各节点散落的 getStringValue/getIntValue 调用面）=====
+
+    /** 规划蓝图（PLAN），未设置时返回 null */
+    public String getPlan() {
+        return getStringValue(PLAN);
+    }
+
+    /** 原始需求/计划快照（写角色节点落库，供审查/报告对齐需求），未设置时返回 null */
+    public String getOriginalRequirement() {
+        return getStringValue(ORIGINAL_REQUIREMENT);
+    }
+
+    /** 规划阶段产出的项目探索事实 JSON（单一写者 PLANNER，下游只读），未设置时返回 null */
+    public String getProjectFacts() {
+        return getStringValue(PROJECT_FACTS);
+    }
+
+    /** CODER 变更的文件列表（逗号分隔），未设置时返回 null */
+    public String getChangedFiles() {
+        return getStringValue(CHANGED_FILES);
+    }
+
+    /** git commit range，未设置时返回 null */
+    public String getChangedDiffRef() {
+        return getStringValue(CHANGED_DIFF_REF);
+    }
+
+    /** 验收标准摘要，未设置时返回 null */
+    public String getAcceptanceCriteria() {
+        return getStringValue(ACCEPTANCE_CRITERIA);
+    }
+
+    /** DEBUGGER 输出的修复策略 JSON，未设置时返回 null */
+    public String getFixStrategy() {
+        return getStringValue(FIX_STRATEGY);
+    }
+
+    /** TESTER 输出的测试结果 JSON，未设置时返回 null */
+    public String getTestResult() {
+        return getStringValue(TEST_RESULT);
+    }
+
+    /** REVIEWER 输出的审查报告 JSON，未设置时返回 null */
+    public String getReviewResult() {
+        return getStringValue(REVIEW_RESULT);
+    }
+
+    /** SUMMARIZER 输出的总结报告 JSON，未设置时返回 null */
+    public String getSummarizeResult() {
+        return getStringValue(SUMMARIZE_RESULT);
+    }
+
+    /** 历史修复记录 JSON 数组，未设置时返回 null */
+    public String getPreviousFixes() {
+        return getStringValue(PREVIOUS_FIXES);
+    }
+
+    /** 用户拒绝规划时的修改意见 JSON，未设置时返回 null */
+    public String getPlanFeedback() {
+        return getStringValue(PLAN_FEEDBACK);
+    }
+
+    /** 用户意图摘要（ROUTE_CONTEXT），未设置时返回 null */
+    public String getRouteContext() {
+        return getStringValue(ROUTE_CONTEXT);
+    }
+
+    /** 下一个节点路由信号（枚举名或 END），未设置时返回 null */
+    public String getNextNode() {
+        return getStringValue(NEXT_NODE);
+    }
+
+    /** 路由选择的工作流模式，未设置时返回 null */
+    public WorkflowMode getWorkflowMode() {
+        Object value = this.data().get(WORKFLOW_MODE);
+        return value instanceof WorkflowMode mode ? mode : null;
+    }
+
+    /** DEBUGGER→CODER 修复回环计数，未设置时返回 0 */
+    public int getDebugLoopCount() {
+        return getIntValue(DEBUG_LOOP_COUNT);
+    }
+
+    /** REVIEWER→CODER 审查打回回环计数，未设置时返回 0 */
+    public int getReviewLoopCount() {
+        return getIntValue(REVIEW_LOOP_COUNT);
+    }
+
+    /** PLAN_CONFIRM 拒绝重规划回环计数，未设置时返回 0 */
+    public int getPlanConfirmCount() {
+        return getIntValue(PLAN_CONFIRM_COUNT);
+    }
+
     /**
-     * 读取字符串型状态值，未设置时返回 null（替代各节点散落的强转）
+     * 读取字符串型状态值，未设置时返回 null（内部实现，外部请用上述强类型访问器）
      */
-    public String getStringValue(String key) {
+    private String getStringValue(String key) {
         Object value = this.data().get(key);
         return value != null ? String.valueOf(value) : null;
     }
 
     /**
-     * 读取整型计数器（如回环熔断计数），未设置时返回 0
+     * 读取整型计数器（如回环熔断计数），未设置时返回 0（内部实现）
      */
-    public int getIntValue(String key) {
+    private int getIntValue(String key) {
         Object value = this.data().get(key);
         if (value instanceof Number number) {
             return number.intValue();
@@ -221,7 +315,7 @@ public class WorkflowState extends AgentState {
      * routeContext 不存在或为空时降级为原始用户消息，不阻断流程。
      */
     public String buildRoutedMessage() {
-        String routeContext = getStringValue(ROUTE_CONTEXT);
+        String routeContext = getRouteContext();
         if (routeContext == null || routeContext.isBlank()) {
             return userMessage;
         }

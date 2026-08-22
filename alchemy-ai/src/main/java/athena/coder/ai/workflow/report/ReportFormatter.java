@@ -62,18 +62,18 @@ public final class ReportFormatter {
             }
 
             // 变更文件（优先使用 git diff --stat 渲染为表格）
-            String changedFiles = subState.getStringValue(WorkflowState.CHANGED_FILES);
-            String changedDiffRef = subState.getStringValue(WorkflowState.CHANGED_DIFF_REF);
+            String changedFiles = subState.getChangedFiles();
+            String changedDiffRef = subState.getChangedDiffRef();
             appendChangedFilesTable(sb, subState, changedFiles, changedDiffRef, workflowName);
 
             // 测试结果
-            String testResult = subState.getStringValue(WorkflowState.TEST_RESULT);
+            String testResult = subState.getTestResult();
             if (testResult != null && !testResult.isBlank()) {
                 appendTestSummary(sb, testResult);
             }
 
             // 审查结论
-            String reviewResult = subState.getStringValue(WorkflowState.REVIEW_RESULT);
+            String reviewResult = subState.getReviewResult();
             if (reviewResult != null && !reviewResult.isBlank()) {
                 appendReviewSummary(sb, reviewResult);
             }

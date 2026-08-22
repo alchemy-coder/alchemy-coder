@@ -118,12 +118,11 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
      */
     private NodeContext buildContext(WorkflowState state) {
         String projectPath = state.getWorkFullPath();
-        Object wm = state.data().get(WorkflowState.WORKFLOW_MODE);
         return new NodeContext(
                 projectPath,
                 state.getTaskId(),
                 state.getModelType(),
-                wm instanceof WorkflowMode mode ? mode : null,
+                state.getWorkflowMode(),
                 ProjectTypeUtil.detect(projectPath));
     }
 

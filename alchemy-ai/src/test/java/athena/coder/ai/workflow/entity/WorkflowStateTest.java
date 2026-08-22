@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.entity;
 
+import athena.coder.ai.assistant.agent.result.router.WorkflowMode;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.LLMModelEnum;
 import org.junit.jupiter.api.Test;
@@ -51,23 +52,34 @@ class WorkflowStateTest {
     }
 
     @Test
-    void getStringValue_nullOrNumber() {
+    void typedStringGetter_absentReturnsNull() {
         WorkflowState s = new WorkflowState(base());
-        assertNull(s.getStringValue("notExist"));
-
-        Map<String, Object> m = base();
-        m.put("num", 123);
-        assertEquals("123", new WorkflowState(m).getStringValue("num"));
+        assertNull(s.getPlan());
+        assertNull(s.getProjectFacts());
+        assertNull(s.getChangedFiles());
+        assertNull(s.getTestResult());
+        assertNull(s.getReviewResult());
+        assertNull(s.getSummarizeResult());
     }
 
     @Test
-    void getIntValue_numberStringInvalid() {
-        WorkflowState s = new WorkflowState(base());
-        assertEquals(0, s.getIntValue("notExist"));
+    void typedStringGetter_numberCoercedToString() {
+        assertEquals("123", stateWith(WorkflowState.PLAN, 123).getPlan());
+    }
 
-        assertEquals(42, stateWith("n", 42).getIntValue("n"));
-        assertEquals(7, stateWith("s", "7").getIntValue("s"));
-        assertEquals(0, stateWith("bad", "abc").getIntValue("bad"));
+    @Test
+    void typedIntGetter_absentReturnsZero() {
+        WorkflowState s = new WorkflowState(base());
+        assertEquals(0, s.getDebugLoopCount());
+        assertEquals(0, s.getReviewLoopCount());
+        assertEquals(0, s.getPlanConfirmCount());
+    }
+
+    @Test
+    void typedIntGetter_numberStringInvalid() {
+        assertEquals(42, stateWith(WorkflowState.DEBUG_LOOP_COUNT, 42).getDebugLoopCount());
+        assertEquals(7, stateWith(WorkflowState.DEBUG_LOOP_COUNT, "7").getDebugLoopCount());
+        assertEquals(0, stateWith(WorkflowState.DEBUG_LOOP_COUNT, "abc").getDebugLoopCount());
     }
 
     @Test
@@ -99,10 +111,18 @@ class WorkflowStateTest {
     @Test
     void projectFacts_absentThenPresent() {
         WorkflowState absent = new WorkflowState(base());
-        assertNull(absent.getStringValue(WorkflowState.PROJECT_FACTS));
+        assertNull(absent.getProjectFacts());
 
         String json = "{\"overview\":\"单体项目\"}";
-        assertEquals(json, stateWith(WorkflowState.PROJECT_FACTS, json).getStringValue(WorkflowState.PROJECT_FACTS));
+        assertEquals(json, stateWith(WorkflowState.PROJECT_FACTS, json).getProjectFacts());
+    }
+
+    @Test
+    void workflowMode_absentThenPresent() {
+        WorkflowState absent = new WorkflowState(base());
+        assertNull(absent.getWorkflowMode());
+
+        assertEquals(WorkflowMode.CODE_WORKFLOW, stateWith(WorkflowState.WORKFLOW_MODE, WorkflowMode.CODE_WORKFLOW).getWorkflowMode());
     }
 
     private static WorkflowState stateWith(String key, Object value) {

@@ -72,7 +72,7 @@ public class WriterNode extends AbstractAgentNode {
         notifyModelCalling(state);
 
         String taskDescription = assembleTaskDescription(state);
-        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
+        String projectFacts = ProjectFacts.toPromptBlock(state.getProjectFacts());
 
         GenericWriterAgent assistant = newChatAssistant(ctx.modelType(), GenericWriterAgent.class, config.policy());
         GitHelper.IsolationResult<CoderResult> isolation = GitHelper.isolateAndCommit(
@@ -100,8 +100,8 @@ public class WriterNode extends AbstractAgentNode {
             notifyResult(state, "[完成]", config.doneMsg());
         }
 
-        String plan = state.getStringValue(PLAN);
-        String acceptanceCriteria = state.getStringValue(ACCEPTANCE_CRITERIA);
+        String plan = state.getPlan();
+        String acceptanceCriteria = state.getAcceptanceCriteria();
 
         return Map.of(
                 CHANGED_FILES, changedFiles,
@@ -112,10 +112,10 @@ public class WriterNode extends AbstractAgentNode {
     }
 
     private String assembleTaskDescription(WorkflowState state) {
-        String plan = state.getStringValue(PLAN);
+        String plan = state.getPlan();
         return switch (config.feedbackSource()) {
             case FIX_STRATEGY -> {
-                String fixStrategy = state.getStringValue(FIX_STRATEGY);
+                String fixStrategy = state.getFixStrategy();
                 String task = (fixStrategy != null && !fixStrategy.isBlank()) ? fixStrategy : plan;
                 if (task == null || task.isBlank()) {
                     throw new RocAgentException(getClass().getSimpleName() + " 无法获取任务描述（plan 和 fixStrategy 均为空）");
@@ -126,7 +126,7 @@ public class WriterNode extends AbstractAgentNode {
                 if (plan == null || plan.isBlank()) {
                     throw new RocAgentException(getClass().getSimpleName() + " 无法获取任务描述（plan 为空）");
                 }
-                String feedback = state.getStringValue(REVIEW_RESULT);
+                String feedback = state.getReviewResult();
                 yield (feedback != null && !feedback.isBlank())
                         ? plan + "\n\n上一轮审查意见（请针对性修改）:\n" + feedback
                         : plan;

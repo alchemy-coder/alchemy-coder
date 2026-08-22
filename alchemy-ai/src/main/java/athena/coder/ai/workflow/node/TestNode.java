@@ -52,13 +52,13 @@ public class TestNode extends AbstractAgentNode {
 
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
-        String changedFiles = requireUpstream(state.getStringValue(CHANGED_FILES),
+        String changedFiles = requireUpstream(state.getChangedFiles(),
                 "changedFiles 为空，无法执行测试（需要" + config.upstreamNoun() + "环节先完成）");
-        String changedDiffRef = requireUpstream(state.getStringValue(CHANGED_DIFF_REF),
+        String changedDiffRef = requireUpstream(state.getChangedDiffRef(),
                 "changedDiffRef 为空，无法查看变更详情（需要" + config.upstreamNoun() + "环节先提交代码）");
-        String acceptanceCriteria = requireUpstream(state.getStringValue(ACCEPTANCE_CRITERIA),
+        String acceptanceCriteria = requireUpstream(state.getAcceptanceCriteria(),
                 "acceptanceCriteria 为空，缺少验收标准（需要主图规划环节先生成执行计划）");
-        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
+        String projectFacts = ProjectFacts.toPromptBlock(state.getProjectFacts());
 
         notifyModelCalling(state);
 

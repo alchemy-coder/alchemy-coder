@@ -93,7 +93,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
                 }
                 case REVISE -> {
                     // 提修改意见：结构化修订指令 + 原文双存，回 PLANNER 重规划（带回环熔断）
-                    int count = state.getIntValue(PLAN_CONFIRM_COUNT) + 1;
+                    int count = state.getPlanConfirmCount() + 1;
                     if (count > MAX_REPLAN_COUNT) {
                         state.outputBotResponse("已达到重新规划次数上限（" + MAX_REPLAN_COUNT + " 次），本次流程终止。", ChatEnum.ROBOT);
                         return Map.of(NEXT_NODE, END);
@@ -146,7 +146,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
     private ConfirmIntentResult classifyReply(WorkflowState state, NodeContext ctx, String reply) throws Exception {
         notifyModelCalling(state);
         ConfirmIntentAgent agent = newChatAssistant(ctx.modelType(), ConfirmIntentAgent.class, AgentToolPolicy.CONFIRM_INTENT);
-        String planSummary = requireUpstream(state.getStringValue(PLAN), "PLAN 缺失，无法进行确认意图判定");
+        String planSummary = requireUpstream(state.getPlan(), "PLAN 缺失，无法进行确认意图判定");
         AgentCall<ConfirmIntentResult> call = request -> {
             ConfirmIntentResult r = agent.classify(request, planSummary);
             if (r == null || r.intent() == null) {
@@ -169,7 +169,7 @@ public class PlanConfirmNode extends AbstractAgentNode {
     private ClarifyResult clarifyReply(WorkflowState state, NodeContext ctx, String question) throws Exception {
         notifyModelCalling(state);
         ClarifyAgent agent = newChatAssistant(ctx.modelType(), ClarifyAgent.class, AgentToolPolicy.CLARIFIER);
-        String planSummary = requireUpstream(state.getStringValue(PLAN), "PLAN 缺失，无法进行答疑");
+        String planSummary = requireUpstream(state.getPlan(), "PLAN 缺失，无法进行答疑");
         AgentCall<ClarifyResult> call = request -> {
             ClarifyResult r = agent.clarify(ctx.taskId(), request, planSummary);
             if (r == null || r.answer() == null || r.answer().isBlank()) {

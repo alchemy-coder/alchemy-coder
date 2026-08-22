@@ -28,9 +28,9 @@ public class PlanNode extends AbstractAgentNode {
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
         String userMessage = state.buildRoutedMessage();
         // 用户拒绝过上一版计划时，组装结构化重规划请求（PLAN_FEEDBACK 由 PLAN_CONFIRM 写入）
-        String planFeedback = state.getStringValue(PLAN_FEEDBACK);
+        String planFeedback = state.getPlanFeedback();
         if (planFeedback != null && !planFeedback.isBlank()) {
-            userMessage = buildReplanMessage(userMessage, state.getStringValue(PLAN), planFeedback);
+            userMessage = buildReplanMessage(userMessage, state.getPlan(), planFeedback);
         }
         WorkflowMode workflowMode = ctx.requireWorkflowMode();
 

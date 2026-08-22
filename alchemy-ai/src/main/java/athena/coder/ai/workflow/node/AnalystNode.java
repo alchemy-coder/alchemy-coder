@@ -59,16 +59,16 @@ public class AnalystNode extends AbstractAgentNode {
 
     @Override
     protected Map<String, Object> doApply(WorkflowState state, NodeContext ctx) throws Exception {
-        String testResult = requireUpstream(state.getStringValue(TEST_RESULT),
+        String testResult = requireUpstream(state.getTestResult(),
                 "testResult 为空，无法分析失败原因（需要测试环节先完成）");
-        String changedFiles = requireUpstream(state.getStringValue(CHANGED_FILES),
+        String changedFiles = requireUpstream(state.getChangedFiles(),
                 "changedFiles 为空，无法确定排查范围（需要" + config.upstreamNoun() + "环节先完成）");
-        String changedDiffRef = requireUpstream(state.getStringValue(CHANGED_DIFF_REF),
+        String changedDiffRef = requireUpstream(state.getChangedDiffRef(),
                 "changedDiffRef 为空，无法查看变更详情");
-        String acceptanceCriteria = requireUpstream(state.getStringValue(ACCEPTANCE_CRITERIA),
+        String acceptanceCriteria = requireUpstream(state.getAcceptanceCriteria(),
                 "acceptanceCriteria 为空，缺少验收标准");
-        String previousFixes = state.getStringValue(PREVIOUS_FIXES);
-        String projectFacts = ProjectFacts.toPromptBlock(state.getStringValue(PROJECT_FACTS));
+        String previousFixes = state.getPreviousFixes();
+        String projectFacts = ProjectFacts.toPromptBlock(state.getProjectFacts());
 
         notifyModelCalling(state);
 
@@ -84,7 +84,7 @@ public class AnalystNode extends AbstractAgentNode {
         boolean shouldEscalate = debugResult.shouldEscalate();
         String fixStrategyJson = MAPPER.writeValueAsString(debugResult);
 
-        int loopCount = state.getIntValue(DEBUG_LOOP_COUNT) + 1;
+        int loopCount = state.getDebugLoopCount() + 1;
         String nextNode = determineNextNode(shouldEscalate, loopCount);
         String updatedPreviousFixes = appendPreviousFixes(previousFixes, MAPPER.readTree(fixStrategyJson));
 
