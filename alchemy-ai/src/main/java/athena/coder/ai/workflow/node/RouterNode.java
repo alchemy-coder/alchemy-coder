@@ -42,8 +42,7 @@ public class RouterNode extends AbstractAgentNode {
                     throw new RocAgentException("路由智能体路由失败", e);
                 });
 
-        WorkflowMode mode = result.workflowMode();
-        return Map.of(WORKFLOW_MODE, mode);
+        return Map.of(WORKFLOW_MODE, result.workflowMode());
     }
 
     @Override

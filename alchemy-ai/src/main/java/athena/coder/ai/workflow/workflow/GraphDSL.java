@@ -96,13 +96,14 @@ public final class GraphDSL {
      * 对条件边而言，NEXT_NODE 缺失意味着节点漏写路由信号，属 bug，不应静默吞掉。
      */
     public static AsyncEdgeAction<WorkflowState> routeBySignal() {
-        return AsyncEdgeAction.edge_async(state ->
-                state.value(WorkflowState.NEXT_NODE)
-                        .map(String::valueOf)
-                        .orElseGet(() -> {
-                            ErrorLogger.warn("routeBySignal", "NEXT_NODE 缺失，默认路由到 END（节点漏写路由信号）");
-                            return END;
-                        }));
+        return AsyncEdgeAction.edge_async(state -> {
+            String next = state.getNextNode();
+            if (next == null) {
+                ErrorLogger.warn("routeBySignal", "NEXT_NODE 缺失，默认路由到 END（节点漏写路由信号）");
+                return END;
+            }
+            return next;
+        });
     }
 
     /**

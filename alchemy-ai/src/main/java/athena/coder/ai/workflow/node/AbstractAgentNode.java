@@ -91,17 +91,16 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
         validateBaseContext(state);
         String nodeName = getClass().getSimpleName();
         long startMs = System.currentTimeMillis();
-        String inputJson = toJson(state.data());
         enableToolProgress(state);
         try {
             Map<String, Object> result = doApply(state, buildContext(state));
             long costMs = System.currentTimeMillis() - startMs;
-            record(state, nodeName, "END", inputJson, result, null, costMs);
+            record(state, nodeName, "END", result, null, costMs);
             return result;
         } catch (Exception e) {
             ErrorLogger.log(nodeName, e, state.getTaskId(), null, null);
             long costMs = System.currentTimeMillis() - startMs;
-            record(state, nodeName, "ERROR", inputJson, null, e.getMessage(), costMs);
+            record(state, nodeName, "ERROR", null, e.getMessage(), costMs);
             throw e;
         } finally {
             disableToolProgress();
@@ -200,15 +199,18 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
 
     /**
      * 落库一次节点执行（入参/出参/当前 state）；sink 未装配时静默跳过，不阻断主流程。
+     * <p>
+     * 入参序列化下沉到 sink 判空之后：未装配 sink 时不再做无谓的全量 state 序列化。
      *
      * @param output 出参 state 增量，ERROR 时传 null
      */
     private void record(WorkflowState state, String nodeName, String phase,
-                        String inputJson, Map<String, Object> output, String errorMsg, long costMs) {
+                        Map<String, Object> output, String errorMsg, long costMs) {
         AgentExecutionSink sink = AiInfra.agentExecutions();
         if (sink == null) {
             return;
         }
+        String inputJson = toJson(state.data());
         String outputJson = toJson(output);
         String stateJson = toJson(merge(state.data(), output));
         sink.record(new AgentExecution(AgentExecution.Kind.NODE, state.getTaskId(), state.getSessionId(), nodeName,
