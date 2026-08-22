@@ -1,8 +1,10 @@
 package athena.coder.ui.leftmenu;
 
+import athena.coder.entity.model.EmbeddingModelEnum;
 import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.entity.tree.ProjectNode;
 import athena.coder.entity.tree.QuestEntity;
+import athena.coder.ui.modelselect.ModelConfigDialog;
 import athena.coder.ui.modelselect.ModelSelectView;
 import atlantafx.base.theme.Styles;
 import javafx.application.Platform;
@@ -50,19 +52,12 @@ public class LeftMenuUI {
         selectModel.setCursor(Cursor.HAND);
         selectModel.getStyleClass().addAll(Styles.FLAT, Styles.ACCENT);
 
-        // 点击弹出模型选择菜单
         selectModel.setOnAction(e -> {
-            ContextMenu menu = new ContextMenu();
-            for (LLMModelEnum model : LLMModelEnum.values()) {
-                MenuItem item = new MenuItem(ModelSelectView.formatModelName(model));
-                item.setOnAction(ev -> selectModel.setText(ModelSelectView.formatModelName(model)));
-                menu.getItems().add(item);
-            }
-            menu.show(selectModel, selectModel.getScene().getWindow().getX()
-                            + selectModel.localToScene(0, 0).getX(),
-                    selectModel.getScene().getWindow().getY()
-                            + selectModel.localToScene(0, 0).getY()
-                            - menu.getHeight());
+            ModelConfigDialog dialog = new ModelConfigDialog(
+                    LLMModelEnum.DEEPSEEKV4PRO, null,
+                    EmbeddingModelEnum.QIANWEN_EMBEDDING_V4, null);
+            dialog.show((javafx.stage.Stage) selectModel.getScene().getWindow(),
+                    result -> selectModel.setText(ModelSelectView.formatModelName(result.llmModel())));
         });
         return selectModel;
     }
