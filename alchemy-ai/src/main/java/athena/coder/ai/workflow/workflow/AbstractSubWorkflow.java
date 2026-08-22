@@ -8,10 +8,8 @@ import athena.coder.exception.RocAgentException;
 import org.bsc.langgraph4j.CompiledGraph;
 import org.bsc.langgraph4j.GraphStateException;
 import org.bsc.langgraph4j.StateGraph;
-import org.bsc.langgraph4j.action.AsyncEdgeAction;
 import org.bsc.langgraph4j.action.NodeAction;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,9 +18,7 @@ import static athena.coder.ai.workflow.entity.NodeEnum.DEBUGGER;
 import static athena.coder.ai.workflow.entity.NodeEnum.REVIEWER;
 import static athena.coder.ai.workflow.entity.NodeEnum.SUMMARIZER;
 import static athena.coder.ai.workflow.entity.NodeEnum.TESTER;
-import static athena.coder.ai.workflow.entity.WorkflowState.NEXT_NODE;
 import static athena.coder.ai.workflow.entity.WorkflowState.SUMMARIZE_RESULT;
-import static org.bsc.langgraph4j.GraphDefinition.END;
 
 /**
  * 子工作流模板基类
@@ -32,9 +28,10 @@ import static org.bsc.langgraph4j.GraphDefinition.END;
  * 2. compile + invoke，以主图 state.data() 作为子图初始状态（透传 TASK_ID 等必填字段）；
  *    图每次请求构建并 compile，不做缓存
  * 3. 异常兜底：子图执行失败时输出 UI 提示并返回空 Map，保证主图能正常走到 END
- * 4. {@link #collectResults}：把子图产物 merge 回主图，最终报告渲染委托 {@link ReportFormatter}
+ * 4. {@link #renderFinalReport}：子图产物经 side-effect 落盘（ROBOT_REPORT）输出，不 merge 回主图；
+ *    最终报告渲染委托 {@link ReportFormatter}
  * <p>
- * 图编排 DSL 配套工具：{@link #routeBySignal()}/{@link #selfTargets}（边注册与校验见 {@link GraphDSL}），
+ * 图编排配套工具（{@link GraphDSL#routeBySignal()}/{@link GraphDSL#selfTargets}），
  * 同构质量闭环拓扑见 {@link #buildQualityLoop}
  */
 public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
@@ -56,32 +53,42 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
         }
         long startMs = System.currentTimeMillis();
 
+        GraphDSL g = new GraphDSL(new StateGraph<>(WorkflowState::new));
+        CompiledGraph<WorkflowState> compiledGraph;
         try {
-            GraphDSL g = new GraphDSL(new StateGraph<>(WorkflowState::new));
             buildGraph(g);
-
-            CompiledGraph<WorkflowState> compiledGraph = g.compile();
-            Optional<WorkflowState> finalState = compiledGraph.invoke(state.data());
-
-            long costMs = System.currentTimeMillis() - startMs;
-            if (finalState.isEmpty()) {
-                ErrorLogger.warn(workflowName(), "执行结束但未返回最终状态，耗时 " + costMs + "ms");
-                state.outputBotResponse("[警告] " + workflowName() + " 执行结束，但未获取到执行结果", ChatEnum.ROBOT_ERROR);
-                return Map.of();
-            }
-            return collectResults(state, finalState.get());
+            compiledGraph = g.compile();
         } catch (Exception e) {
             long costMs = System.currentTimeMillis() - startMs;
             ErrorLogger.log(workflowName(), e, state.getTaskId(), null, null);
+            state.outputBotResponse("[失败] " + workflowName() + " 图构建失败: " + e.getMessage(), ChatEnum.ROBOT_ERROR);
+            return Map.of();
+        }
+
+        Optional<WorkflowState> finalState;
+        try {
+            finalState = compiledGraph.invoke(state.data());
+        } catch (Exception e) {
+            long costMs = System.currentTimeMillis() - startMs;
+            // 节点执行异常已由 AbstractAgentNode.apply 统一记录（含 nodeName 上下文），
+            // 此处仅输出用户提示，避免同一 taskId 产生双份 ERROR 日志。
             state.outputBotResponse("[失败] " + workflowName() + " 执行失败: " + e.getMessage(), ChatEnum.ROBOT_ERROR);
             return Map.of();
         }
+
+        long costMs = System.currentTimeMillis() - startMs;
+        if (finalState.isEmpty()) {
+            ErrorLogger.warn(workflowName(), "执行结束但未返回最终状态，耗时 " + costMs + "ms");
+            state.outputBotResponse("[警告] " + workflowName() + " 执行结束，但未获取到执行结果", ChatEnum.ROBOT_ERROR);
+            return Map.of();
+        }
+        return renderFinalReport(state, finalState.get());
     }
 
     /**
-     * 输出最终 UI 结果；子图产物经 side-effect 落盘，无需 merge 回主图
+     * 输出最终 UI 结果：子图产物经 side-effect（ROBOT_REPORT）落盘，无需 merge 回主图
      */
-    private Map<String, Object> collectResults(WorkflowState masterState, WorkflowState subState) {
+    private Map<String, Object> renderFinalReport(WorkflowState masterState, WorkflowState subState) {
         Object summarizeResult = subState.data().get(SUMMARIZE_RESULT);
         if (summarizeResult != null) {
             String formattedReport = ReportFormatter.format(subState, String.valueOf(summarizeResult), workflowName());
@@ -93,10 +100,10 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
         return Map.of();
     }
 
-    // ===== 同构质量闭环拓扑（编码/测试补全工作流共用）=====
+    // ===== 同构质量闭环拓扑（编码/测试补全/缺陷修复工作流共用）=====
 
     /**
-     * 质量闭环五节点实例
+     * 质量闭环节点实例；reviewer 仅在 {@code withReviewer=true} 时注册，否则可传 null
      */
     protected record QualityLoopNodes(NodeAction<WorkflowState> coder,
                                       NodeAction<WorkflowState> tester,
@@ -106,52 +113,35 @@ public abstract class AbstractSubWorkflow implements NodeAction<WorkflowState> {
     }
 
     /**
-     * 完整质量闭环拓扑：
-     * START → CODER → TESTER ─ PASS/SKIP → REVIEWER ─ 通过 → SUMMARIZER → END
-     *           ↑         └─ FAIL/ERROR → DEBUGGER ──┐        ↑
+     * 质量闭环拓扑（含审查与否两种变体）：
+     * START → CODER → TESTER ─ PASS/SKIP → (REVIEWER | SUMMARIZER) ─ 通过 → SUMMARIZER → END
+     *           ↑         └─ FAIL/ERROR → DEBUGGER ──┐
      *           └────────── 修复策略回 CODER ←────────┘（升级/熔断 → SUMMARIZER）
      *           └────────── REVIEWER 打回（REQUEST_CHANGES，超限熔断 → SUMMARIZER）
+     *
+     * @param withReviewer true=完整闭环（含 REVIEWER），false=跳过审查（缺陷修复以测试通过为准）
      */
-    protected final void buildQualityLoop(GraphDSL g, QualityLoopNodes n) throws GraphStateException {
+    protected final void buildQualityLoop(GraphDSL g, QualityLoopNodes n, boolean withReviewer) throws GraphStateException {
         g.node(CODER, n.coder());
         g.node(TESTER, n.tester());
         g.node(DEBUGGER, n.debugger());
-        g.node(REVIEWER, n.reviewer());
+        if (withReviewer) {
+            g.node(REVIEWER, n.reviewer());
+        }
         g.node(SUMMARIZER, n.summarizer());
 
         g.fromStart(CODER);
         // CODER：不写路由信号，固定走 TESTER（失败直接抛出，由基类统一收口）
         g.edge(CODER, TESTER);
-        // TESTER：PASS/SKIP → REVIEWER，FAIL/ERROR → DEBUGGER
-        g.route(TESTER, routeBySignal(), selfTargets(REVIEWER, DEBUGGER));
+        // TESTER：PASS/SKIP → REVIEWER（含审查）或 SUMMARIZER（跳过审查），FAIL/ERROR → DEBUGGER
+        g.route(TESTER, GraphDSL.routeBySignal(), GraphDSL.selfTargets(withReviewer ? REVIEWER : SUMMARIZER, DEBUGGER));
         // DEBUGGER：修复策略回 CODER，升级/熔断 → SUMMARIZER
-        g.route(DEBUGGER, routeBySignal(), selfTargets(CODER, SUMMARIZER));
-        // REVIEWER：通过/熔断/BLOCKED → SUMMARIZER，打回 → CODER
-        g.route(REVIEWER, routeBySignal(), selfTargets(SUMMARIZER, CODER));
+        g.route(DEBUGGER, GraphDSL.routeBySignal(), GraphDSL.selfTargets(CODER, SUMMARIZER));
+        if (withReviewer) {
+            // REVIEWER：通过/熔断/BLOCKED → SUMMARIZER，打回 → CODER
+            g.route(REVIEWER, GraphDSL.routeBySignal(), GraphDSL.selfTargets(SUMMARIZER, CODER));
+        }
         // SUMMARIZER 收尾
         g.toEnd(SUMMARIZER);
-    }
-
-    // ===== 图编排 DSL 配套工具 =====
-
-    /**
-     * 严格按 NEXT_NODE 字符串信号分流，信号缺失时走 END
-     */
-    public static AsyncEdgeAction<WorkflowState> routeBySignal() {
-        return AsyncEdgeAction.edge_async(state ->
-                state.value(NEXT_NODE).map(String::valueOf).orElse(END));
-    }
-
-    /**
-     * 生成自映射的条件边目标表（信号值即目标节点名），自动附加 END 兜底映射，
-     * 消除成对的 X.name(), X.name() 样板代码
-     */
-    public static Map<String, String> selfTargets(Enum<?>... nodes) {
-        Map<String, String> targets = new HashMap<>(nodes.length + 1, 1.0f);
-        for (Enum<?> node : nodes) {
-            targets.put(node.name(), node.name());
-        }
-        targets.put(END, END);
-        return targets;
     }
 }

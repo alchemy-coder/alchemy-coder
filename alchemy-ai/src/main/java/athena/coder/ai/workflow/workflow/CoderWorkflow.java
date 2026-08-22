@@ -31,6 +31,6 @@ public class CoderWorkflow extends AbstractSubWorkflow {
     protected void buildGraph(GraphDSL g) throws GraphStateException {
         buildQualityLoop(g, new QualityLoopNodes(
                 WriterNode.code(), TestNode.code(), AnalystNode.code(),
-                ReviewNode.code(), ReportNode.code()));
+                ReviewNode.code(), ReportNode.code()), true);
     }
 }

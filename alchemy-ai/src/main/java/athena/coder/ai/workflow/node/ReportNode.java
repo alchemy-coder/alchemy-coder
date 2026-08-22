@@ -84,21 +84,8 @@ public class ReportNode extends AbstractAgentNode {
 
         validateSummarizeResult(summarizeResult);
 
-        // 输出报告给用户
-        String reportTitle = textAt(summarizeResult.report(), "/title");
-        String reportOverview = textAt(summarizeResult.report(), "/overview");
-        String fullMessage = summarizeResult.commitMessage() != null
-                ? textAt(summarizeResult.commitMessage(), "/fullMessage") : null;
-        StringBuilder reportMsg = new StringBuilder();
-        if (reportTitle != null && !reportTitle.isBlank())
-            reportMsg.append("## ").append(reportTitle).append("\n\n");
-        if (reportOverview != null && !reportOverview.isBlank())
-            reportMsg.append(reportOverview).append("\n\n");
-        if (fullMessage != null && !fullMessage.isBlank())
-            reportMsg.append("**Commit:** ").append(fullMessage).append("\n");
-        if (!reportMsg.isEmpty()) {
-            notifyResult(state, "[完成]", reportMsg.toString());
-        }
+        // 完整报告由 ReportFormatter 统一渲染（唯一呈现路径），此处仅输出轻量完成提示
+        notifyResult(state, "[完成]", "总结完成，正在生成最终报告");
 
         return Map.of(SUMMARIZE_RESULT, summarizeResultJson, NEXT_NODE, END);
     }
@@ -128,35 +115,34 @@ public class ReportNode extends AbstractAgentNode {
             String branchPrefix,
             String request,
             String retryRequest,
-            String actionVerb,
             AgentToolPolicy policy) {
 
         public static ReportConfig code() {
             return new ReportConfig("编码工作流：功能实现交付报告", "feat", "feature",
                     "请整合本次编码工作流的全部执行结果，生成交付报告和 Commit Message",
                     "请重新生成总结。注意：上次调用失败，请严格按JSON格式输出完整报告。",
-                    "总结", AgentToolPolicy.REPORTER);
+                    AgentToolPolicy.REPORTER);
         }
 
         public static ReportConfig test() {
             return new ReportConfig("测试补全工作流：补测交付报告", "test", "test",
                     "请整合本次测试补全工作流的全部执行结果，生成补测报告和 Commit Message",
                     "请重新生成补测报告。注意：上次调用失败，请严格按JSON格式输出完整报告。",
-                    "补测报告", AgentToolPolicy.REPORTER);
+                    AgentToolPolicy.REPORTER);
         }
 
         public static ReportConfig fix() {
             return new ReportConfig("缺陷修复工作流：修复交付报告", "fix", "fix",
                     "请整合本次缺陷修复的全部执行结果，生成修复报告和 Commit Message",
                     "请重新生成修复报告。注意：上次调用失败，请严格按JSON格式输出完整报告。",
-                    "修复报告", AgentToolPolicy.REPORTER);
+                    AgentToolPolicy.REPORTER);
         }
 
         public static ReportConfig doc() {
             return new ReportConfig("文档工作流：文档变更交付报告", "docs", "docs",
                     "请整合本次文档工作流的全部执行结果，生成文档变更报告和 Commit Message",
                     "请重新生成文档报告。注意：上次调用失败，请严格按JSON格式输出完整报告。",
-                    "文档报告", AgentToolPolicy.REPORTER);
+                    AgentToolPolicy.REPORTER);
         }
     }
 }

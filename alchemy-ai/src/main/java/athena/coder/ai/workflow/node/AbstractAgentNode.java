@@ -12,7 +12,6 @@ import athena.coder.ai.util.ProjectTypeUtil;
 import athena.coder.entity.chat.ChatEnum;
 import athena.coder.entity.model.LLMModelEnum;
 import athena.coder.exception.RocAgentException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -36,10 +35,9 @@ import java.util.function.Function;
  * 构建 {@link NodeContext} 快照后委托子类 {@link #doApply} 执行差异化业务
  * 2. {@link #callAgentWithRetry}：统一的“首调 → 任何异常带错误信息重试一次 → 兕底/上抛”策略（泛型，支持强类型结果）
  * 3. {@link #requireUpstream}/{@link #warnIfBlank}：上游数据声明式校验
- * 4. {@link #textAt}：Agent 输出 JSON 字段提取（JSON Pointer）
- * 5. {@link #buildChangeSummary}：changedFiles + diffRef 合并为结构化 JSON（Jackson 构建，避免手拼注入）
- * 6. {@link #sessionId}：会话 ID 节点侧生成（提示词不再让 LLM 自制 ID）
- * 7. 每次节点执行把入参/出参/当前 state 持久化到 {@link AgentExecutionSink}（替代原执行日志）
+ * 4. {@link #buildChangeSummary}：changedFiles + diffRef 合并为结构化 JSON（Jackson 构建，避免手拼注入）
+ * 5. {@link #sessionId}：会话 ID 节点侧生成（提示词不再让 LLM 自制 ID）
+ * 6. 每次节点执行把入参/出参/当前 state 持久化到 {@link AgentExecutionSink}（替代原执行日志）
  * <p>
  * 节点差异化逻辑（determineNextNode/输出组装）保留在各子类与角色基类中
  */
@@ -57,17 +55,6 @@ public abstract class AbstractAgentNode implements NodeAction<WorkflowState> {
             throw new RocAgentException(message);
         }
         return value;
-    }
-
-    /**
-     * 提取 JSON 文本字段，缺失时返回默认值
-     */
-    protected static String textAt(JsonNode node, String pointer) {
-        if (node == null) {
-            return null;
-        }
-        JsonNode target = node.at(pointer);
-        return target.isMissingNode() || target.isNull() ? null : target.asText();
     }
 
     /**

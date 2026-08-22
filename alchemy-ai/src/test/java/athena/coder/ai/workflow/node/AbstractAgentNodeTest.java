@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,20 +40,6 @@ class AbstractAgentNodeTest {
     @Test
     void requireUpstream_returnsValue() {
         assertEquals("PLAN", PROBE.requireUpstream("PLAN", "缺计划"));
-    }
-
-    @Test
-    void textAt_nullOrMissing_returnsNull() throws Exception {
-        assertNull(PROBE.textAt(null, "/a"));
-        JsonNode node = MAPPER.readTree("{\"a\":\"x\"}");
-        assertNull(PROBE.textAt(node, "/missing"));
-        assertNull(PROBE.textAt(node, "/a/b"));
-    }
-
-    @Test
-    void textAt_present_returnsText() throws Exception {
-        JsonNode node = MAPPER.readTree("{\"plan\":\"do it\"}");
-        assertEquals("do it", PROBE.textAt(node, "/plan"));
     }
 
     @Test

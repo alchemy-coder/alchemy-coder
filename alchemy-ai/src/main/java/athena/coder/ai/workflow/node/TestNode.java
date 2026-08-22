@@ -108,7 +108,6 @@ public class TestNode extends AbstractAgentNode {
             String scenario,
             String request,
             String retryRequest,
-            String actionVerb,
             String upstreamNoun,
             StepRole stepRole,
             String passMsg,
@@ -122,7 +121,7 @@ public class TestNode extends AbstractAgentNode {
             return new TestConfig("编码工作流：对功能代码变更执行测试验证，精准验证功能实现",
                     "请对代码变更执行测试验证",
                     "请重新执行测试。注意：上次调用失败，请严格按JSON格式输出测试结果。",
-                    "测试", "编码", StepRole.TESTER,
+                    "编码", StepRole.TESTER,
                     "测试通过", "测试失败，进入修复流程", "测试执行出错，进入修复流程", "测试被跳过",
                     NodeEnum.REVIEWER, AgentToolPolicy.TESTER);
         }
@@ -131,7 +130,7 @@ public class TestNode extends AbstractAgentNode {
             return new TestConfig("测试补全工作流：执行新补写的测试用例并采集覆盖率数据",
                     "请执行新补写的测试用例并采集覆盖率数据",
                     "请重新执行测试。注意：上次调用失败，请严格按JSON格式输出测试结果。",
-                    "执行新测试", "补测", StepRole.TESTER,
+                    "补测", StepRole.TESTER,
                     "新测试全部通过", "新测试存在失败，进入失败分析", "测试执行出错，进入失败分析", "测试被跳过",
                     NodeEnum.REVIEWER, AgentToolPolicy.TESTER);
         }
@@ -140,7 +139,7 @@ public class TestNode extends AbstractAgentNode {
             return new TestConfig("缺陷修复工作流：对修复变更执行回归验证，确认缺陷复现路径转绿且无新增回归",
                     "请对修复变更执行回归验证，确认缺陷复现路径转绿且无新增回归",
                     "请重新执行回归验证。注意：上次调用失败，请严格按JSON格式输出验证结果。",
-                    "回归验证", "修复", StepRole.TESTER,
+                    "修复", StepRole.TESTER,
                     "回归验证通过，缺陷已修复", "回归验证失败，进入根因分析", "验证执行出错，进入根因分析", "验证被跳过",
                     NodeEnum.SUMMARIZER, AgentToolPolicy.TESTER);
         }

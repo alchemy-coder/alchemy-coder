@@ -40,7 +40,7 @@ public class WordWorkflow extends AbstractSubWorkflow {
         // CODER：不写路由信号，固定走 REVIEWER（失败直接抛出，由子工作流基类统一收口）
         g.edge(CODER, REVIEWER);
         // REVIEWER：通过/熔断/BLOCKED → SUMMARIZER，打回 → CODER
-        g.route(REVIEWER, routeBySignal(), selfTargets(SUMMARIZER, CODER));
+        g.route(REVIEWER, GraphDSL.routeBySignal(), GraphDSL.selfTargets(SUMMARIZER, CODER));
         // SUMMARIZER 收尾
         g.toEnd(SUMMARIZER);
     }

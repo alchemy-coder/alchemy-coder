@@ -23,8 +23,8 @@ import static athena.coder.ai.workflow.entity.NodeEnum.PLANNER;
 import static athena.coder.ai.workflow.entity.NodeEnum.PLAN_CONFIRM;
 import static athena.coder.ai.workflow.entity.NodeEnum.ROUTER;
 import static athena.coder.ai.workflow.entity.NodeEnum.USER_FACE;
-import static athena.coder.ai.workflow.workflow.AbstractSubWorkflow.routeBySignal;
-import static athena.coder.ai.workflow.workflow.AbstractSubWorkflow.selfTargets;
+import static athena.coder.ai.workflow.workflow.GraphDSL.routeBySignal;
+import static athena.coder.ai.workflow.workflow.GraphDSL.selfTargets;
 
 public class MasterWorkflow {
 
@@ -60,7 +60,7 @@ public class MasterWorkflow {
                 selfTargets(PLANNER, WorkflowMode.CODE_WORKFLOW, WorkflowMode.DEBUG_WORKFLOW,
                         WorkflowMode.WORD_WORKFLOW, WorkflowMode.TEST_WORKFLOW));
 
-        //子工作流执行完毕 → END（最终报告由子工作流基类 collectResults 输出）
+        //子工作流执行完毕 → END（最终报告由子工作流基类 renderFinalReport 输出）
         g.toEnd(WorkflowMode.CODE_WORKFLOW);
         g.toEnd(WorkflowMode.DEBUG_WORKFLOW);
         g.toEnd(WorkflowMode.WORD_WORKFLOW);

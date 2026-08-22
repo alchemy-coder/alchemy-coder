@@ -1,5 +1,6 @@
 package athena.coder.ai.workflow.workflow;
 
+import athena.coder.ai.spi.ErrorLogger;
 import athena.coder.ai.workflow.entity.WorkflowState;
 import org.bsc.langgraph4j.CompiledGraph;
 import org.bsc.langgraph4j.GraphStateException;
@@ -8,6 +9,7 @@ import org.bsc.langgraph4j.action.AsyncEdgeAction;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.action.NodeAction;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -85,5 +87,34 @@ public final class GraphDSL {
         if (!registered.contains(name.name())) {
             throw new GraphStateException("引用了未注册的节点: " + name.name());
         }
+    }
+
+    // ===== 图编排配套工具 =====
+
+    /**
+     * 严格按 NEXT_NODE 字符串信号分流；信号缺失时记录告警并走 END。
+     * 对条件边而言，NEXT_NODE 缺失意味着节点漏写路由信号，属 bug，不应静默吞掉。
+     */
+    public static AsyncEdgeAction<WorkflowState> routeBySignal() {
+        return AsyncEdgeAction.edge_async(state ->
+                state.value(WorkflowState.NEXT_NODE)
+                        .map(String::valueOf)
+                        .orElseGet(() -> {
+                            ErrorLogger.warn("routeBySignal", "NEXT_NODE 缺失，默认路由到 END（节点漏写路由信号）");
+                            return END;
+                        }));
+    }
+
+    /**
+     * 生成自映射的条件边目标表（信号值即目标节点名），自动附加 END 兜底映射，
+     * 消除成对的 X.name(), X.name() 样板代码
+     */
+    public static Map<String, String> selfTargets(Enum<?>... nodes) {
+        Map<String, String> targets = new HashMap<>(nodes.length + 1, 1.0f);
+        for (Enum<?> node : nodes) {
+            targets.put(node.name(), node.name());
+        }
+        targets.put(END, END);
+        return targets;
     }
 }

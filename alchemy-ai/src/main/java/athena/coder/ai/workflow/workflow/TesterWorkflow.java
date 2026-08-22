@@ -26,6 +26,6 @@ public class TesterWorkflow extends AbstractSubWorkflow {
     protected void buildGraph(GraphDSL g) throws GraphStateException {
         buildQualityLoop(g, new QualityLoopNodes(
                 WriterNode.test(), TestNode.test(), AnalystNode.test(),
-                ReviewNode.test(), ReportNode.test()));
+                ReviewNode.test(), ReportNode.test()), true);
     }
 }
