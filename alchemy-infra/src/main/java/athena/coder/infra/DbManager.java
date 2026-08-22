@@ -122,6 +122,10 @@ public class DbManager {
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_model_type_default
                 ON model(type, is_default) WHERE is_default = 1 AND deleted_at IS NULL;
                 """);
+        handle.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_model_type_name_version
+                ON model(type, name, version) WHERE deleted_at IS NULL;
+                """);
     }
 
     /** 聊天记忆表（每条消息一行记录 + 软删除） */

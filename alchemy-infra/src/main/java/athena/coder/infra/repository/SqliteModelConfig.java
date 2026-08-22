@@ -41,7 +41,8 @@ public final class SqliteModelConfig implements ModelConfigPort {
     }
 
     /**
-     * 保存/更新模型配置（upsert: 按 type+name+version），设为默认时自动取消同类型其他默认
+     * 保存/更新模型配置（先更新，不存在则插入），设为默认时自动取消同类型其他默认。
+     * 不做软删除，只做 UPDATE 或 INSERT。
      */
     public void saveModel(ModelType type, String name, String version, String apiKey, boolean isDefault) {
         getJdbi().useTransaction(handle -> {
@@ -50,18 +51,24 @@ public final class SqliteModelConfig implements ModelConfigPort {
                         .bind("type", type.dbValue())
                         .execute();
             }
-            handle.createUpdate("UPDATE model SET deleted_at = datetime('now','localtime') WHERE type = :type AND name = :name AND version = :version AND deleted_at IS NULL")
-                    .bind("type", type.dbValue())
-                    .bind("name", name)
-                    .bind("version", version)
-                    .execute();
-            handle.createUpdate("INSERT INTO model (type, name, version, api_key, is_default, create_at, update_at) VALUES (:type, :name, :version, :apiKey, :isDefault, datetime('now','localtime'), datetime('now','localtime'))")
+            int updated = handle.createUpdate(
+                    "UPDATE model SET api_key = :apiKey, is_default = :isDefault, update_at = datetime('now','localtime') WHERE type = :type AND name = :name AND version = :version AND deleted_at IS NULL")
                     .bind("type", type.dbValue())
                     .bind("name", name)
                     .bind("version", version)
                     .bind("apiKey", apiKey)
                     .bind("isDefault", isDefault ? 1 : 0)
                     .execute();
+            if (updated == 0) {
+                handle.createUpdate(
+                        "INSERT INTO model (type, name, version, api_key, is_default, create_at, update_at) VALUES (:type, :name, :version, :apiKey, :isDefault, datetime('now','localtime'), datetime('now','localtime'))")
+                        .bind("type", type.dbValue())
+                        .bind("name", name)
+                        .bind("version", version)
+                        .bind("apiKey", apiKey)
+                        .bind("isDefault", isDefault ? 1 : 0)
+                        .execute();
+            }
         });
     }
 }
