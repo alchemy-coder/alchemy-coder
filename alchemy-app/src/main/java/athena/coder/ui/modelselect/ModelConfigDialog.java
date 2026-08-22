@@ -20,6 +20,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import org.jspecify.annotations.NonNull;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -68,9 +69,9 @@ public class ModelConfigDialog {
     private static final String RADIO_SELECTED_STYLE =
             "-fx-font-size: 13px;" +
             "-fx-padding: 6 10 6 10;" +
-            "-fx-background-color: #E5E7EB;" +
+            "-fx-background-color: #F3F4F6;" +
             "-fx-background-radius: 6;" +
-            "-fx-text-fill: #111827;";
+            "-fx-text-fill: #374151;";
 
     private static final String BTN_STYLE =
             "-fx-background-color: #F3F4F6;" +
@@ -83,6 +84,24 @@ public class ModelConfigDialog {
     private static final String BTN_HOVER_STYLE =
             "-fx-background-color: #E5E7EB;" +
             "-fx-text-fill: #111827;" +
+            "-fx-font-size: 13px;" +
+            "-fx-padding: 8 14 8 14;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;";
+
+    private static final String SAVE_BTN_STYLE =
+            "-fx-background-color: #EEF2FF;" +
+            "-fx-text-fill: #4F46E5;" +
+            "-fx-font-weight: bold;" +
+            "-fx-font-size: 13px;" +
+            "-fx-padding: 8 14 8 14;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;";
+
+    private static final String SAVE_BTN_HOVER_STYLE =
+            "-fx-background-color: #E0E7FF;" +
+            "-fx-text-fill: #4338CA;" +
+            "-fx-font-weight: bold;" +
             "-fx-font-size: 13px;" +
             "-fx-padding: 8 14 8 14;" +
             "-fx-background-radius: 8;" +
@@ -293,10 +312,17 @@ public class ModelConfigDialog {
         cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(BTN_STYLE));
         cancelBtn.setOnAction(e -> dialog.close());
 
+        Button saveBtn = getButton(dialog, onSave);
+
+        bar.getChildren().addAll(cancelBtn, saveBtn);
+        return bar;
+    }
+
+    private @NonNull Button getButton(Stage dialog, Consumer<Result> onSave) {
         Button saveBtn = new Button("保存配置");
-        saveBtn.setStyle(BTN_STYLE);
-        saveBtn.setOnMouseEntered(e -> saveBtn.setStyle(BTN_HOVER_STYLE));
-        saveBtn.setOnMouseExited(e -> saveBtn.setStyle(BTN_STYLE));
+        saveBtn.setStyle(SAVE_BTN_STYLE);
+        saveBtn.setOnMouseEntered(e -> saveBtn.setStyle(SAVE_BTN_HOVER_STYLE));
+        saveBtn.setOnMouseExited(e -> saveBtn.setStyle(SAVE_BTN_STYLE));
         saveBtn.setDefaultButton(true);
         saveBtn.setOnAction(e -> {
             onSave.accept(new Result(
@@ -304,9 +330,7 @@ public class ModelConfigDialog {
                     selectedEmbModel, embKeyField.getText().trim()));
             dialog.close();
         });
-
-        bar.getChildren().addAll(cancelBtn, saveBtn);
-        return bar;
+        return saveBtn;
     }
 
     private static String formatEmbModelName(EmbeddingModelEnum model) {
