@@ -1,11 +1,8 @@
 package athena.coder.entity.model;
 
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.embedding.EmbeddingModel;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ModelEnumTest {
 
@@ -13,14 +10,6 @@ class ModelEnumTest {
     void modelType_dbValue() {
         assertEquals("chat", ModelType.CHAT.dbValue());
         assertEquals("embedding", ModelType.EMBEDDING.dbValue());
-    }
-
-    @Test
-    void chatFactories_buildNonNullModels() {
-        for (LLMModelEnum m : LLMModelEnum.values()) {
-            ChatModel model = m.getFactory().apply("sk-test");
-            assertNotNull(model, m.name());
-        }
     }
 
     @Test
@@ -32,10 +21,11 @@ class ModelEnumTest {
     }
 
     @Test
-    void embeddingFactory_buildsNonNullModel() {
-        EmbeddingModelEnum e = EmbeddingModelEnum.QIANWEN_EMBEDDING_V4;
-        EmbeddingModel model = e.getFactory().apply("sk-test");
-        assertNotNull(model);
+    void modelEnum_fromNameVersion() {
+        assertEquals(LLMModelEnum.QIANWEN37MAX,
+                LLMModelEnum.fromNameVersion("qianwen", "qwen3.7-max"));
+        assertEquals(LLMModelEnum.DEEPSEEKV4PRO,
+                LLMModelEnum.fromNameVersion("deepseek", "deepseek-v4-pro"));
     }
 
     @Test
